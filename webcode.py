@@ -6,6 +6,7 @@ import functools
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
+import time
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)  # Generate a random secret key
@@ -147,6 +148,98 @@ def add_student():
 def admin_home():
     get_user_role(session['lid'])
     return render_template('admin/base.html')
+
+@app.route('/view_staff', methods=['POST', 'GET'])
+@login_required
+def view_staff():
+    cmd = con.cursor()
+    cmd.execute("SELECT * FROM teacher")
+    res = cmd.fetchall()
+    return render_template("admin/stafflist.html", val=res)
+
+@app.route('/delete_staff', methods=['POST', 'GET'])
+@login_required
+def delete_staff():
+    tlid = request.args.get('lid')
+    cmd = con.cursor()
+    cmd.execute("DELETE FROM teacher WHERE lid=%s", (tlid,))
+    con.commit()
+    return '''<script>alert("Successfully Deleted");window.location='/view_staff'</script>'''
+
+@app.route('/add_staff', methods=['POST', 'GET'])
+@login_required
+def add_staff():
+    return render_template("admin/staff_form.html")
+
+@app.route('/staffreg', methods=['POST', 'GET'])
+@login_required
+def staffreg():
+    try:
+        fname = request.form['text1']
+        code = request.form['text2']
+        address = request.form['text3']
+        phone = request.form['text4']
+        email = request.form['text5']
+        qualification = request.form['text6']
+        dept = request.form['select']
+        img = request.files['files']
+        name = secure_filename(img.filename)
+        import time
+        req = time.strftime("%Y%m%d_%H%M%S") + ".jpg"
+        img.save(os.path.join('./static/photos/staffphoto', req))
+        uname = request.form['uname']
+        password = request.form['password']
+        cnfpassword = request.form['cnfpassword']
+        if password == cnfpassword:
+            cmd = con.cursor()
+            cmd.execute("INSERT INTO login VALUES (null, %s, %s, 'teacher')", (uname, password))
+            id = con.insert_id()
+            cmd.execute("INSERT INTO teacher VALUES (null, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (id, fname, code, address, phone, email, qualification, dept, req))
+            con.commit()
+            return '''<script>alert("Successfully Added");window.location='/view_staff'</script>'''
+        else:
+            return '''<script>alert("Password Mismatch!");window.location='/add_staff'</script>'''
+    except Exception as e:
+        print(e)
+        return '''<script>alert("Error occurred");window.location='/add_staff'</script>'''
+
+@app.route('/edit_staff', methods=['POST', 'GET'])
+def edit_staff():
+    cmd = con.cursor()
+    cmd.execute("SELECT * FROM teacher WHERE lid=%s", (request.args.get('lid'),))
+    res = cmd.fetchone()
+    cmd.execute("SELECT dept FROM department")
+    dept = cmd.fetchall()
+    return render_template("admin/staff_form.html", val=res, dept=dept)
+
+@app.route('/update_staff', methods=['POST', 'GET'])
+def update_staff():
+    try:
+        fname = request.form['text1']
+        code = request.form['text2']
+        address = request.form['text3']
+        phone = request.form['text4']
+        email = request.form['text5']
+        qualification = request.form['text6']
+        dept = request.form['select']
+        lid = request.form['lid']
+        img = request.files['files']
+        if img:
+            name = secure_filename(img.filename)
+            import time
+            req = time.strftime("%Y%m%d_%H%M%S") + ".jpg"
+            img.save(os.path.join('./static/photos/staffphoto', req))
+            cmd = con.cursor()
+            cmd.execute("UPDATE teacher SET name=%s, teacher_code=%s, address=%s, phone=%s, email=%s, qualification=%s, department=%s, photo=%s WHERE lid=%s", (fname, code, address, phone, email, qualification, dept, req, lid))
+            con.commit()
+        else:
+            cmd = con.cursor()
+            cmd.execute("UPDATE teacher SET name=%s, teacher_code=%s, address=%s, phone=%s, email=%s, qualification=%s, department=%s WHERE lid=%s", (fname, code, address, phone, email, qualification, dept, lid))
+            con.commit()
+        return '''<script>alert("Successfully Updated");window.location='/view_staff'</script>'''
+    except Exception as e:
+        print(e)
+        return '''<script>alert("Error occurred");window.location='/edit_staff'</script>'''
 
 if __name__ == "__main__":
     app.run(debug=True)
