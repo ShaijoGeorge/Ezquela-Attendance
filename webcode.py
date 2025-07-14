@@ -241,5 +241,39 @@ def update_staff():
         print(e)
         return '''<script>alert("Error occurred");window.location='/edit_staff'</script>'''
 
+@app.route('/view_student', methods=['POST', 'GET'])
+@login_required
+def view_student():
+    cmd = con.cursor()
+    cmd.execute("SELECT * FROM student")
+    res = cmd.fetchall()
+    return render_template("admin/studentlist.html", val=res)
+
+@app.route('/dept_search_student', methods=['POST', 'GET'])
+@login_required
+def dept_search_student():
+    dept = request.form['select']
+    cmd = con.cursor()
+    cmd.execute("SELECT * FROM student WHERE department='"+dept+"'")
+    res = cmd.fetchall()
+    return render_template("admin/studentlist.html", val=res)
+
+@app.route('/edit_student',methods=['post','get'])
+@login_required
+def edit_student():
+    tlid=request.args.get('lid')
+    session['slid']=tlid
+    cmd.execute("select * from student where lid='"+tlid+"'")
+    res=cmd.fetchone()
+    return render_template("admin/student_editform.html",i=res)
+
+@app.route('/delete_student',methods=['post','get'])
+@login_required
+def delete_student():
+    tlid=request.args.get('lid')
+    cmd.execute("delete from student where lid='"+tlid+"' ")
+    con.commit()
+    return '''<script>alert("Successfully Deleted");window.location='/view_student'</script>'''
+
 if __name__ == "__main__":
     app.run(debug=True)
