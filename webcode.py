@@ -142,5 +142,11 @@ def add_student():
             con.rollback()
         return f'''<script>alert("Registration failed: {str(e)}");window.location='/student_signup'</script>'''
 
+@app.route('/admin_home', methods=['POST', 'GET'])
+@login_required
+def admin_home():
+    get_user_role(session['lid'])
+    return render_template('admin/base.html')
+
 if __name__ == "__main__":
     app.run(debug=True)
