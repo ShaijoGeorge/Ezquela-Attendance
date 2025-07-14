@@ -1,0 +1,88 @@
+{% extends 'admin/adminindex.html' %}
+
+{% block body %}
+
+  <div class="container py-4">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i> Add New Subject</h5>
+      </div>
+
+      <div class="card-body">
+        <form method="post" action="/register_subject" enctype="multipart/form-data" id="addSubject-form" class="row g-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="col-md-6">
+            <label for="department" class="form-label">Department</label>
+            <select name="department" id="select" class="form-select" required>
+              <option disabled selected>-- Department --</option>
+              {% for dept_name in ['CSE','EEE','ECE','AD','RE','MR','ME'] %}
+              <option>{{ dept_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label for="semester" class="form-label">Semester</label>
+            <select name="Semester" id="SemesterSelect" class="form-select" required>
+              <option disabled selected>-- Semester --</option>
+              {% for s in range(1,9) %}
+              <option>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label for="subject_code" class="form-label">Subject Code</label>
+            <input type="text" name="text2" class="form-control" required>
+          </div>
+
+          <div class="col-md-6">
+            <label for="subject" class="form-label">Subject Name</label>
+            <input type="text" name="text1" class="form-control" required>
+          </div>
+
+          <div class="col-md-12">
+            <label for="Staff" class="form-label">Staff</label>
+            <select name="Staff" id="select2" class="form-select" disabled required>
+              <option>-- Select Staff --</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="btn btn-success w-100">
+              <i class="fas fa-check-circle me-1"></i> Submit
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <script>
+    $(document).ready(function(){
+      $("select#select").change(function() {
+        var dept = $('#select option:selected').val();
+        if (dept) {
+          $.ajax({
+            type: 'POST',
+            url: "/get_staff",
+            data: { dept: dept, csrf_token: $("input[name='csrf_token']").val() },
+            success: function(response) {
+              var opt = '<option>-- Select Staff --</option>';
+              for (var i = 0; i < response.length; i ++) {
+                opt += '<option value="' + response[i].id + '">' + response[i].name + '</option>';
+              }
+              $('select#select2').html(opt).prop('disabled', false);
+            }
+          });
+        } else {
+          $('select#select2').html('<option>-- Select Staff --</option>').prop('disabled', true);
+        }
+      });
+    });
+  </script>
+
+{% endblock %}
