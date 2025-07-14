@@ -1,0 +1,50 @@
+{% extends 'admin/adminindex.html' %}
+
+{% block body %}
+  <!-- Hero Section -->
+  <section class="hero-section py-5 text-center" style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; border-radius: 10px;">
+    <div class="container">
+      <h1 class="display-4 fw-bold">Welcome to Ezquela Admin Dashboard</h1>
+      <p class="lead">“Education is the most powerful weapon which you can use to change the world.”</p>
+      <h6 class="mb-4">—Nelson Mandela</h6>
+      <a href="/view_student" class="btn btn-light btn-lg me-2"><i class="fas fa-user-graduate me-2"></i> View Students</a>
+      <a href="/view_staff" class="btn btn-outline-light btn-lg"><i class="fas fa-users me-2"></i> Manage Staff</a>
+    </div>
+  </section>
+
+  <!-- Additional Content Example -->
+  <div class="container my-5">
+    <div class="row text-center">
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <i class="fas fa-user-tie fa-2x mb-3 text-primary"></i>
+            <h5 class="card-title">Staff Management</h5>
+            <p class="card-text">Add, edit, and manage staff members efficiently.</p>
+            <a href="/view_staff" class="btn btn-primary btn-sm">Go</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <i class="fas fa-users fa-2x mb-3 text-success"></i>
+            <h5 class="card-title">Student Management</h5>
+            <p class="card-text">View and update student records with ease.</p>
+            <a href="/view_student" class="btn btn-success btn-sm">Go</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <i class="fas fa-calendar-alt fa-2x mb-3 text-warning"></i>
+            <h5 class="card-title">Timetable</h5>
+            <p class="card-text">Create and manage class timetables efficiently.</p>
+            <a href="/add_timetable" class="btn btn-warning btn-sm text-dark">Go</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
