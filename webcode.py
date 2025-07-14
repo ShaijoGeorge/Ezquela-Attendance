@@ -258,7 +258,7 @@ def dept_search_student():
     res = cmd.fetchall()
     return render_template("admin/studentlist.html", val=res)
 
-@app.route('/edit_student',methods=['post','get'])
+@app.route('/edit_student',methods=['POST','GET'])
 @login_required
 def edit_student():
     tlid=request.args.get('lid')
@@ -267,13 +267,73 @@ def edit_student():
     res=cmd.fetchone()
     return render_template("admin/student_editform.html",i=res)
 
-@app.route('/delete_student',methods=['post','get'])
+@app.route('/delete_student',methods=['POST','GET'])
 @login_required
 def delete_student():
     tlid=request.args.get('lid')
     cmd.execute("delete from student where lid='"+tlid+"' ")
     con.commit()
     return '''<script>alert("Successfully Deleted");window.location='/view_student'</script>'''
+
+@app.route('/view_subject',methods=['POST','GET'])
+@login_required
+def view_subject():
+    return render_template("admin/subjectView.html")
+
+@app.route('/view_subjects_dept_sem',methods=['POST','GET'])
+@login_required
+def view_subjects_dept_sem():
+    dept=request.form['select']
+    sem=request.form['select1']
+    cmd.execute("SELECT `subject`.*,`teacher`.`name`,`teacher`.`teacher_code` FROM `teacher` JOIN `subject` ON `subject`.`staff_lid`=`teacher`.`lid` WHERE `subject`.`department`='"+dept+"' AND `subject`.`semester`='"+sem+"'")
+    s=cmd.fetchall()
+    print(s)
+    return render_template("admin/subjectView.html",val=s,dept=dept,sem=sem)
+
+@app.route('/delete_subject',methods=['POST','GET'])
+@login_required
+def delete_subject():
+    id=request.args.get('lid')
+    cmd.execute("delete from subject where sid='"+id+"' ")
+    con.commit()
+    return '''<script>alert("Successfully Deleted");window.location='/view_subject'</script>'''
+
+@app.route('/add_subject',methods=['POST','GET'])
+@login_required
+def add_subject():
+    return render_template("admin/register_subject.html")
+
+@app.route('/register_subject',methods=['POST','GET'])
+@login_required
+def register_subject():
+    subject=request.form['text2']
+    code=request.form['text1']
+    dept=request.form['department']
+    sem=request.form['Semester']
+    staffid=request.form['Staff']
+    cmd.execute("insert into subject values(null,'"+subject+"','"+code+"','"+dept+"','"+sem+"','"+staffid+"') ")
+    con.commit()
+    return '''<script>alert("Successfully Registred");window.location='/view_subject'</script>'''
+
+@app.route('/get_staff', methods=['POST'])
+def get_staff():
+    dept = request.form['dept']
+    print(dept)
+    cmd.execute("SELECT `lid`,`name`,`teacher_code` FROM `teacher` WHERE `department`=%s", (dept,))
+    s = cmd.fetchall()
+    print(s)
+
+    staff_list = []
+    for r in s:
+        staff_list.append({
+            'id': r[0],
+            'name': f"{r[1]} (CODE:{r[2]})"
+        })
+    print(staff_list)
+    resp = make_response(jsonify(staff_list))
+    resp.status_code = 200
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
 
 if __name__ == "__main__":
     app.run(debug=True)

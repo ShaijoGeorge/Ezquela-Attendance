@@ -1,0 +1,79 @@
+{% extends 'admin/adminindex.html' %}
+
+{% block body %}
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="mb-0"><i class="fas fa-book-open me-2"></i> Subjects</h4>
+      <a href="/add_subject" class="btn btn-success">
+        <i class="fas fa-plus me-1"></i> Add Subject
+      </a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <form action="/view_subjects_dept_sem" method="post" class="row g-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="col-md-5">
+            <label for="department" class="form-label">Department</label>
+            <select class="form-select" id="department" name="select" required>
+              <option disabled selected>--Department--</option>
+              {% for dept_name in ['CSE','EEE','ECE','AD','RE','MR','ME'] %}
+              <option {% if dept==dept_name %} selected {% endif %}>{{ dept_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-5">
+            <label for="semester" class="form-label">Semester</label>
+            <select class="form-select" id="semester" name="select1" required>
+              <option disabled selected>--Semester--</option>
+              {% for s in range(1,9) %}
+              <option {% if sem==s|string %} selected {% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-search me-1"></i> View
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-table me-2"></i> Subject List</h5>
+      </div>
+      <div class="card-body p-0">
+
+        <table class="table table-striped table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Staff</th>
+              <th>Subject</th>
+              <th>Subject Code</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in val %}
+            <tr>
+              <td>{{ i[6] }}</td>
+              <td>{{ i[2] }}</td>
+              <td>{{ i[1] }} (CODE: {{ i[7] }})</td>
+              <td>
+                <a href="/delete_subject?lid={{ i[0] }}" class="btn btn-sm btn-danger">
+                  <i class="fas fa-trash-alt"></i> Delete
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
