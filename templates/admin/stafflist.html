@@ -1,0 +1,83 @@
+{% extends 'admin/adminindex.html' %}
+
+{% block body %}
+  <div class="container-fluid px-4">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center my-4">
+      <h1 class="h3 mb-0">Staff Details</h1>
+      <a href="/add_staff" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i> Add New Staff</a>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <form action="/dept_search_staff" method="post" class="row g-3 align-items-end">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="col-md-4">
+            <label for="department" class="form-label">Department</label>
+            <select name="select" id="department" class="form-select">
+              <option disabled selected>-- Department --</option>
+              <option {% if dept=="CSE"%} selected {% endif %}>CSE</option>
+              <option {% if dept=="EEE"%} selected {% endif %}>EEE</option>
+              <option {% if dept=="ECE"%} selected {% endif %}>ECE</option>
+              <option {% if dept=="AD"%} selected {% endif %}>AD</option>
+              <option {% if dept=="RE"%} selected {% endif %}>RE</option>
+              <option {% if dept=="MR"%} selected {% endif %}>MR</option>
+              <option {% if dept=="ME"%} selected {% endif %}>ME</option>
+            </select>
+          </div>
+          <div class="col-md-auto">
+            <button type="submit" class="btn btn-success"><i class="fas fa-search me-2"></i> Search</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Staff Table -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-primary">
+              <tr>
+                <th scope="col">Photo</th>
+                <th scope="col">Name</th>
+                <th scope="col">Staff Code</th>
+                <th scope="col">Address</th>
+                <th scope="col">Department</th>
+                <th scope="col">Phone</th>
+                <th scope="col">Email ID</th>
+                <th scope="col">Qualification</th>
+                <th scope="col">Edit</th>
+                <th scope="col">Delete</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in val %}
+              <tr>
+                <td>
+                  <img src="./static/photos/staffphoto/{{i[9]}}" alt="{{i[2]}}" class="rounded" width="80" height="80" style="object-fit: cover;">
+                </td>
+                <td>{{i[2]}}</td>
+                <td>{{i[3]}}</td>
+                <td>{{i[4]}}</td>
+                <td>{{i[8]}}</td>
+                <td>{{i[5]}}</td>
+                <td>{{i[6]}}</td>
+                <td>{{i[7]}}</td>
+                <td>
+                  <a href="/edit_staff?lid={{i[1]}}" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit"></i></a>
+                </td>
+                <td>
+                  <a href="/delete_staff?lid={{i[1]}}" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
