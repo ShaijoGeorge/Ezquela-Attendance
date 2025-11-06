@@ -53,7 +53,7 @@ def user():
     if request.method == "POST":
         user = request.form['textfield']
         passw = request.form['textfield2']
-        cmd.execute("select*from login where username='"+user+"' and password='"+passw+"'")
+        cmd.execute("SELECT * FROM login WHERE username = %s AND password = %s", (user, passw))
         result = cmd.fetchone()
         if result is None:
             return '''<script>alert("invalid username and password");window.location='/login'</script>'''
@@ -254,7 +254,7 @@ def view_student():
 def dept_search_student():
     dept = request.form['select']
     cmd = con.cursor()
-    cmd.execute("SELECT * FROM student WHERE department='"+dept+"'")
+    cmd.execute("SELECT * FROM student WHERE department=%s", (dept,))
     res = cmd.fetchall()
     return render_template("admin/studentlist.html", val=res)
 
@@ -263,7 +263,7 @@ def dept_search_student():
 def edit_student():
     tlid=request.args.get('lid')
     session['slid']=tlid
-    cmd.execute("select * from student where lid='"+tlid+"'")
+    cmd.execute("SELECT * FROM student WHERE lid=%s", (tlid,))
     res=cmd.fetchone()
     return render_template("admin/student_editform.html",i=res)
 
@@ -271,7 +271,7 @@ def edit_student():
 @login_required
 def delete_student():
     tlid=request.args.get('lid')
-    cmd.execute("delete from student where lid='"+tlid+"' ")
+    cmd.execute("DELETE FROM student WHERE lid=%s", (tlid,))
     con.commit()
     return '''<script>alert("Successfully Deleted");window.location='/view_student'</script>'''
 
@@ -285,7 +285,7 @@ def view_subject():
 def view_subjects_dept_sem():
     dept=request.form['select']
     sem=request.form['select1']
-    cmd.execute("SELECT `subject`.*,`teacher`.`name`,`teacher`.`teacher_code` FROM `teacher` JOIN `subject` ON `subject`.`staff_lid`=`teacher`.`lid` WHERE `subject`.`department`='"+dept+"' AND `subject`.`semester`='"+sem+"'")
+    cmd.execute("SELECT `subject`.*,`teacher`.`name`,`teacher`.`teacher_code` FROM `teacher` JOIN `subject` ON `subject`.`staff_lid`=`teacher`.`lid` WHERE `subject`.`department`=%s AND `subject`.`semester`=%s", (dept, sem))
     s=cmd.fetchall()
     print(s)
     return render_template("admin/subjectView.html",val=s,dept=dept,sem=sem)
@@ -294,7 +294,7 @@ def view_subjects_dept_sem():
 @login_required
 def delete_subject():
     id=request.args.get('lid')
-    cmd.execute("delete from subject where sid='"+id+"' ")
+    cmd.execute("DELETE FROM subject WHERE sid=%s", (id,))
     con.commit()
     return '''<script>alert("Successfully Deleted");window.location='/view_subject'</script>'''
 
@@ -311,7 +311,7 @@ def register_subject():
     dept=request.form['department']
     sem=request.form['Semester']
     staffid=request.form['Staff']
-    cmd.execute("insert into subject values(null,'"+subject+"','"+code+"','"+dept+"','"+sem+"','"+staffid+"') ")
+    cmd.execute("INSERT INTO subject VALUES (null, %s, %s, %s, %s, %s)", (subject, code, dept, sem, staffid))
     con.commit()
     return '''<script>alert("Successfully Registred");window.location='/view_subject'</script>'''
 
@@ -355,11 +355,11 @@ def addtimetable():
     # hour=request.form['select3']
     session['semess']=sem
     session['deptt']=dept
-    cmd.execute("SELECT * FROM timetable WHERE `dept`='"+str(dept)+"' AND `sem`='"+str(sem)+"'")
+    cmd.execute("SELECT * FROM timetable WHERE `dept`=%s AND `sem`=%s", (dept, sem))
     s=cmd.fetchone()
     if s is None:
         a1 = []
-        cmd.execute("SELECT * FROM `subject` WHERE `department`='" + dept + "' AND `semester`='" + sem + "' ")
+        cmd.execute("SELECT * FROM `subject` WHERE `department`=%s AND `semester`=%s", (dept, sem))
         res = cmd.fetchall()
         if res is not None:
             for i in res:
@@ -379,21 +379,21 @@ def addtimetable():
             flattened_list = [item for sublist in result_list for item in sublist]
 
             print(flattened_list)
-            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Monday','"+flattened_list[0]+"','"+flattened_list[1]+"','"+flattened_list[2]+"','break','"+flattened_list[4]+"','"+flattened_list[5]+"','"+flattened_list[6]+"')")
+            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Monday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[0], flattened_list[1], flattened_list[2], flattened_list[4], flattened_list[5], flattened_list[6]))
             con.commit()
 
-            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Tuesday','"+flattened_list[7]+"','"+flattened_list[8]+"','"+flattened_list[9]+"','break','"+flattened_list[11]+"','"+flattened_list[12]+"','"+flattened_list[13]+"')")
+            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Tuesday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[7], flattened_list[8], flattened_list[9], flattened_list[11], flattened_list[12], flattened_list[13]))
             con.commit()
 
-            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Wednesday','"+flattened_list[14]+"','"+flattened_list[15]+"','"+flattened_list[16]+"','break','"+flattened_list[18]+"','"+flattened_list[19]+"','"+flattened_list[20]+"')")
+            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Wednesday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[14], flattened_list[15], flattened_list[16], flattened_list[18], flattened_list[19], flattened_list[20]))
             con.commit()
 
-            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Thursday','"+flattened_list[21]+"','"+flattened_list[22]+"','"+flattened_list[23]+"','break','"+flattened_list[25]+"','"+flattened_list[26]+"','"+flattened_list[27]+"')")
+            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Thursday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[21], flattened_list[22], flattened_list[23], flattened_list[25], flattened_list[26], flattened_list[27]))
             con.commit()
 
-            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Friday','"+flattened_list[28]+"','"+flattened_list[29]+"','"+flattened_list[30]+"','break','"+flattened_list[32]+"','"+flattened_list[33]+"','"+flattened_list[34]+"')")
+            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Friday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[28], flattened_list[29], flattened_list[30], flattened_list[32], flattened_list[33], flattened_list[34]))
             con.commit()
-            cmd.execute("SELECT `day`,`h1`,`h2`,`h3`,`h4`,`h5`,`h6`,`h7` FROM `timetable` WHERE `dept`='"+dept+"' AND `sem`='"+sem+"'")
+            cmd.execute("SELECT `day`,`h1`,`h2`,`h3`,`h4`,`h5`,`h6`,`h7` FROM `timetable` WHERE `dept`=%s AND `sem`=%s", (dept, sem))
             res=cmd.fetchall()
 
             return render_template("admin/timetable.html",res=res)
@@ -434,8 +434,7 @@ def generate_timetable(subjects, hours_per_day):
 @app.route('/viewtimetable',methods=['post','get'])
 @login_required
 def viewtimetable():
-    cmd.execute(
-        "SELECT `day`,`h1`,`h2`,`h3`,`h4`,`h5`,`h6`,`h7`,`tid` FROM `timetable` WHERE `dept`='" + str(session['deptt']) + "' AND `sem`='" +str(session['semess'])+ "'")
+    cmd.execute("SELECT `day`,`h1`,`h2`,`h3`,`h4`,`h5`,`h6`,`h7`,`tid` FROM `timetable` WHERE `dept`=%s AND `sem`=%s", (session['deptt'], session['semess']))
     res = cmd.fetchall()
     return render_template("admin/timetableview.html",res=res)
 
