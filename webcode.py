@@ -6,32 +6,60 @@ import functools
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
-import time
+from dbutils.pooled_db import PooledDB
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)  # Generate a random secret key
-csrf = CSRFProtect(app)  # Enable CSRF protection
+app.secret_key = secrets.token_hex(16)
+csrf = CSRFProtect(app)
 
-def get_db_connection():
-    return pymysql.connect(host='localhost', port=3306, user='root', passwd='', db='attendance_face')
-con = get_db_connection()
-cmd = con.cursor()
+# Database connection pool configuration
+pool = PooledDB(
+    creator=pymysql,  # Database module
+    maxconnections=10,  # Max connections allowed
+    mincached=2,  # Minimum idle connections
+    maxcached=5,  # Max idle connections
+    maxshared=3,  # Max shared connections
+    blocking=True,  # Block if no connections available
+    maxusage=None,  # Max times a connection can be reused (None = unlimited)
+    setsession=[],  # SQL commands to execute on new connections
+    ping=1,  # Ping MySQL on checkout (0=never, 1=default, 2=when used, 4=always, 7=all)
+    host='localhost',
+    port=3306,
+    user='root',
+    password='',
+    database='attendance_face',
+    charset='utf8mb4',
+    cursorclass=pymysql.cursors.DictCursor,
+    autocommit=False  # Manual transaction control
+)
+
+def get_db():
+    """Get database connection from pool"""
+    if 'db' not in g:
+        g.db = pool.connection()
+    return g.db
+
+@app.teardown_appcontext
+def close_db(error):
+    """Return connection to pool at end of request"""
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()  # Returns connection to pool, doesn't actually close it
 
 def login_required(func):
     @functools.wraps(func)
-    def secure_function():
+    def secure_function(*args, **kwargs):
         if "lid" not in session:
-            return index()
-        return func()
+            return redirect(url_for('user'))
+        return func(*args, **kwargs)
     return secure_function
 
 def get_user_role(user_id):
-    cmd.execute("SELECT usertype FROM login WHERE id = %s", (user_id,))
-    result = cmd.fetchone()
-    if result:
-        return result[0]
-    else:
-        return None
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT usertype FROM login WHERE id = %s", (user_id,))
+        result = cursor.fetchone()
+        return result['usertype'] if result else None
 
 @app.route('/')
 def index():
@@ -43,32 +71,42 @@ def index():
             return redirect('/teacher_home')
         elif role == "student":
             return redirect('/student_home')
-    else:
-        return redirect(url_for('user'))
+    return redirect(url_for('user'))
 
 @app.route('/login', methods=["GET", "POST"])
 def user():
     if 'lid' in session:
         return redirect(url_for('index'))
+    
     if request.method == "POST":
-        user = request.form['textfield']
-        passw = request.form['textfield2']
-        cmd.execute("SELECT * FROM login WHERE username = %s AND password = %s", (user, passw))
-        result = cmd.fetchone()
+        username = request.form.get('textfield', '').strip()
+        password = request.form.get('textfield2', '')
+        
+        if not username or not password:
+            return '''<script>alert("Username and password required");window.location='/login'</script>'''
+        
+        db = get_db()
+        with db.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, usertype FROM login WHERE username = %s AND password = %s", 
+                (username, password)
+            )
+            result = cursor.fetchone()
+            
         if result is None:
-            return '''<script>alert("invalid username and password");window.location='/login'</script>'''
-        else:
-            session['lid'] = result[0]
-        if 'lid' in session:
-            role = get_user_role(session['lid'])
-            if role == "admin":
-                return redirect('/admin_home')
-            elif role == "teacher":
-                return redirect('/teacher_home')
-            elif role == "student":
-                return redirect('/student_home')
-        else:
-            return redirect(url_for('user'))
+            return '''<script>alert("Invalid username or password");window.location='/login'</script>'''
+        
+        session['lid'] = result['id']
+        role = result['usertype']
+        
+        if role == "admin":
+            return redirect('/admin_home')
+        elif role == "teacher":
+            return redirect('/teacher_home')
+        elif role == "student":
+            return redirect('/student_home')
+        
+        return redirect(url_for('user'))
 
     response = make_response(render_template('login.html'))
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -78,38 +116,37 @@ def user():
 
 @app.route('/logout')
 def logout():
-    print("lllllllllllllllllllll")
     session.pop('lid', None)
     return redirect(url_for('user'))
 
-@app.route('/student_signup',methods=['post','get'])
+@app.route('/student_signup', methods=['POST', 'GET'])
 def student_signup():
     return render_template("student.html")
 
-@app.route('/add_student',methods=['post','get'])
+@app.route('/add_student', methods=['POST', 'GET'])
 def add_student():
+    db = get_db()
     try:
         # Get form data
-        fname=request.form['text1']
-        regno=request.form['text2']
-        address=request.form['text3']
-        phone=request.form['text4']
-        email=request.form['text5']
-
-        dob=request.form['text6']
-        dept=request.form['select']
-        Semester=request.form['select1']
-        division=request.form['select3']
-        guardian=request.form['guardian']
-        guardian_phone=request.form['phone']
+        fname = request.form['text1']
+        regno = request.form['text2']
+        address = request.form['text3']
+        phone = request.form['text4']
+        email = request.form['text5']
+        dob = request.form['text6']
+        dept = request.form['select']
+        semester = request.form['select1']
+        division = request.form['select3']
+        guardian = request.form['guardian']
+        guardian_phone = request.form['phone']
 
         # Handle file upload
         if 'files' not in request.files:
             return '''<script>alert("No file uploaded");window.location='/student_signup'</script>'''
-            
+        
         img = request.files['files']
         if img.filename == '':
-            return '''<script>alert("No selected file");window.location='/student_signup'</script>'''
+            return '''<script>alert("No file selected");window.location='/student_signup'</script>'''
 
         # Generate unique filename
         filename = secure_filename(img.filename)
@@ -125,23 +162,29 @@ def add_student():
         cnfpassword = request.form['cnfpassword']
         
         if password != cnfpassword:
-            return '''<script>alert("Password Mismatch!");window.location='/student_signup'</script>'''
+            return '''<script>alert("Password mismatch");window.location='/student_signup'</script>'''
 
-        # Database operations
-        with con.cursor() as cmd:
-            cmd.execute("INSERT INTO login VALUES (null, %s, %s, 'student')", (uname, password))
-            id = con.insert_id()
-            cmd.execute("""INSERT INTO student VALUES (null, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (id, fname, regno, address, phone, email, dob, dept, Semester, division, unique_filename, guardian, guardian_phone))
-            con.commit()
+        # Database operations with transaction
+        with db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO login VALUES (null, %s, %s, 'student')", 
+                (uname, password)
+            )
+            lid = db.insert_id()
             
-        return '''<script>alert("Successfully Registered");window.location='/'</script>'''
-        
+            cursor.execute(
+                """INSERT INTO student VALUES 
+                (null, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (lid, fname, regno, address, phone, email, dob, 
+                 dept, semester, division, unique_filename, guardian, guardian_phone)
+            )
+        db.commit()
+        return '''<script>alert("Successfully registered");window.location='/'</script>'''
+            
     except Exception as e:
-        print(f"Error: {str(e)}")
-        # Rollback in case of error
-        if 'con' in locals():
-            con.rollback()
-        return f'''<script>alert("Registration failed: {str(e)}");window.location='/student_signup'</script>'''
+        db.rollback()
+        print(f"Error in add_student: {str(e)}")
+        return '''<script>alert("Registration failed");window.location='/student_signup'</script>'''
 
 @app.route('/admin_home', methods=['POST', 'GET'])
 @login_required
@@ -152,19 +195,26 @@ def admin_home():
 @app.route('/view_staff', methods=['POST', 'GET'])
 @login_required
 def view_staff():
-    cmd = con.cursor()
-    cmd.execute("SELECT * FROM teacher")
-    res = cmd.fetchall()
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM teacher")
+        res = cursor.fetchall()
     return render_template("admin/stafflist.html", val=res)
 
 @app.route('/delete_staff', methods=['POST', 'GET'])
 @login_required
 def delete_staff():
     tlid = request.args.get('lid')
-    cmd = con.cursor()
-    cmd.execute("DELETE FROM teacher WHERE lid=%s", (tlid,))
-    con.commit()
-    return '''<script>alert("Successfully Deleted");window.location='/view_staff'</script>'''
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("DELETE FROM teacher WHERE lid=%s", (tlid,))
+        db.commit()
+        return '''<script>alert("Successfully deleted");window.location='/view_staff'</script>'''
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting staff: {str(e)}")
+        return '''<script>alert("Error occurred");window.location='/view_staff'</script>'''
 
 @app.route('/add_staff', methods=['POST', 'GET'])
 @login_required
@@ -174,6 +224,7 @@ def add_staff():
 @app.route('/staffreg', methods=['POST', 'GET'])
 @login_required
 def staffreg():
+    db = get_db()
     try:
         fname = request.form['text1']
         code = request.form['text2']
@@ -182,38 +233,51 @@ def staffreg():
         email = request.form['text5']
         qualification = request.form['text6']
         dept = request.form['select']
+        
         img = request.files['files']
-        name = secure_filename(img.filename)
-        import time
-        req = time.strftime("%Y%m%d_%H%M%S") + ".jpg"
-        img.save(os.path.join('./static/photos/staffphoto', req))
+        filename = secure_filename(img.filename)
+        unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        upload_path = os.path.join('./static/photos/staffphoto', unique_filename)
+        os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+        img.save(upload_path)
+        
         uname = request.form['uname']
         password = request.form['password']
         cnfpassword = request.form['cnfpassword']
-        if password == cnfpassword:
-            cmd = con.cursor()
-            cmd.execute("INSERT INTO login VALUES (null, %s, %s, 'teacher')", (uname, password))
-            id = con.insert_id()
-            cmd.execute("INSERT INTO teacher VALUES (null, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (id, fname, code, address, phone, email, qualification, dept, req))
-            con.commit()
-            return '''<script>alert("Successfully Added");window.location='/view_staff'</script>'''
-        else:
-            return '''<script>alert("Password Mismatch!");window.location='/add_staff'</script>'''
+        
+        if password != cnfpassword:
+            return '''<script>alert("Password mismatch");window.location='/add_staff'</script>'''
+        
+        with db.cursor() as cursor:
+            cursor.execute("INSERT INTO login VALUES (null, %s, %s, 'teacher')", (uname, password))
+            lid = db.insert_id()
+            cursor.execute(
+                "INSERT INTO teacher VALUES (null, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
+                (lid, fname, code, address, phone, email, qualification, dept, unique_filename)
+            )
+        db.commit()
+        return '''<script>alert("Successfully added");window.location='/view_staff'</script>'''
+        
     except Exception as e:
-        print(e)
+        db.rollback()
+        print(f"Error in staffreg: {str(e)}")
         return '''<script>alert("Error occurred");window.location='/add_staff'</script>'''
 
 @app.route('/edit_staff', methods=['POST', 'GET'])
+@login_required
 def edit_staff():
-    cmd = con.cursor()
-    cmd.execute("SELECT * FROM teacher WHERE lid=%s", (request.args.get('lid'),))
-    res = cmd.fetchone()
-    cmd.execute("SELECT dept FROM department")
-    dept = cmd.fetchall()
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM teacher WHERE lid=%s", (request.args.get('lid'),))
+        res = cursor.fetchone()
+        cursor.execute("SELECT dept FROM department")
+        dept = cursor.fetchall()
     return render_template("admin/staff_form.html", val=res, dept=dept)
 
 @app.route('/update_staff', methods=['POST', 'GET'])
+@login_required
 def update_staff():
+    db = get_db()
     try:
         fname = request.form['text1']
         code = request.form['text2']
@@ -223,119 +287,166 @@ def update_staff():
         qualification = request.form['text6']
         dept = request.form['select']
         lid = request.form['lid']
-        img = request.files['files']
-        if img:
-            name = secure_filename(img.filename)
-            import time
-            req = time.strftime("%Y%m%d_%H%M%S") + ".jpg"
-            img.save(os.path.join('./static/photos/staffphoto', req))
-            cmd = con.cursor()
-            cmd.execute("UPDATE teacher SET name=%s, teacher_code=%s, address=%s, phone=%s, email=%s, qualification=%s, department=%s, photo=%s WHERE lid=%s", (fname, code, address, phone, email, qualification, dept, req, lid))
-            con.commit()
-        else:
-            cmd = con.cursor()
-            cmd.execute("UPDATE teacher SET name=%s, teacher_code=%s, address=%s, phone=%s, email=%s, qualification=%s, department=%s WHERE lid=%s", (fname, code, address, phone, email, qualification, dept, lid))
-            con.commit()
-        return '''<script>alert("Successfully Updated");window.location='/view_staff'</script>'''
+        
+        img = request.files.get('files')
+        
+        with db.cursor() as cursor:
+            if img and img.filename:
+                filename = secure_filename(img.filename)
+                unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                upload_path = os.path.join('./static/photos/staffphoto', unique_filename)
+                os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+                img.save(upload_path)
+                
+                cursor.execute(
+                    """UPDATE teacher SET name=%s, teacher_code=%s, address=%s, 
+                    phone=%s, email=%s, qualification=%s, department=%s, photo=%s 
+                    WHERE lid=%s""", 
+                    (fname, code, address, phone, email, qualification, dept, unique_filename, lid)
+                )
+            else:
+                cursor.execute(
+                    """UPDATE teacher SET name=%s, teacher_code=%s, address=%s, 
+                    phone=%s, email=%s, qualification=%s, department=%s WHERE lid=%s""", 
+                    (fname, code, address, phone, email, qualification, dept, lid)
+                )
+        db.commit()
+        return '''<script>alert("Successfully updated");window.location='/view_staff'</script>'''
+        
     except Exception as e:
-        print(e)
+        db.rollback()
+        print(f"Error updating staff: {str(e)}")
         return '''<script>alert("Error occurred");window.location='/edit_staff'</script>'''
 
 @app.route('/view_student', methods=['POST', 'GET'])
 @login_required
 def view_student():
-    cmd = con.cursor()
-    cmd.execute("SELECT * FROM student")
-    res = cmd.fetchall()
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM student")
+        res = cursor.fetchall()
     return render_template("admin/studentlist.html", val=res)
 
 @app.route('/dept_search_student', methods=['POST', 'GET'])
 @login_required
 def dept_search_student():
     dept = request.form['select']
-    cmd = con.cursor()
-    cmd.execute("SELECT * FROM student WHERE department=%s", (dept,))
-    res = cmd.fetchall()
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM student WHERE department=%s", (dept,))
+        res = cursor.fetchall()
     return render_template("admin/studentlist.html", val=res)
 
-@app.route('/edit_student',methods=['POST','GET'])
+@app.route('/edit_student', methods=['POST', 'GET'])
 @login_required
 def edit_student():
-    tlid=request.args.get('lid')
-    session['slid']=tlid
-    cmd.execute("SELECT * FROM student WHERE lid=%s", (tlid,))
-    res=cmd.fetchone()
-    return render_template("admin/student_editform.html",i=res)
+    tlid = request.args.get('lid')
+    session['slid'] = tlid
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM student WHERE lid=%s", (tlid,))
+        res = cursor.fetchone()
+    return render_template("admin/student_editform.html", i=res)
 
-@app.route('/delete_student',methods=['POST','GET'])
+@app.route('/delete_student', methods=['POST', 'GET'])
 @login_required
 def delete_student():
-    tlid=request.args.get('lid')
-    cmd.execute("DELETE FROM student WHERE lid=%s", (tlid,))
-    con.commit()
-    return '''<script>alert("Successfully Deleted");window.location='/view_student'</script>'''
+    tlid = request.args.get('lid')
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("DELETE FROM student WHERE lid=%s", (tlid,))
+        db.commit()
+        return '''<script>alert("Successfully deleted");window.location='/view_student'</script>'''
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting student: {str(e)}")
+        return '''<script>alert("Error occurred");window.location='/view_student'</script>'''
 
-@app.route('/view_subject',methods=['POST','GET'])
+@app.route('/view_subject', methods=['POST', 'GET'])
 @login_required
 def view_subject():
     return render_template("admin/subjectView.html")
 
-@app.route('/view_subjects_dept_sem',methods=['POST','GET'])
+@app.route('/view_subjects_dept_sem', methods=['POST', 'GET'])
 @login_required
 def view_subjects_dept_sem():
-    dept=request.form['select']
-    sem=request.form['select1']
-    cmd.execute("SELECT `subject`.*,`teacher`.`name`,`teacher`.`teacher_code` FROM `teacher` JOIN `subject` ON `subject`.`staff_lid`=`teacher`.`lid` WHERE `subject`.`department`=%s AND `subject`.`semester`=%s", (dept, sem))
-    s=cmd.fetchall()
-    print(s)
-    return render_template("admin/subjectView.html",val=s,dept=dept,sem=sem)
+    dept = request.form['select']
+    sem = request.form['select1']
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute(
+            """SELECT `subject`.*, `teacher`.`name`, `teacher`.`teacher_code` 
+            FROM `teacher` JOIN `subject` ON `subject`.`staff_lid`=`teacher`.`lid` 
+            WHERE `subject`.`department`=%s AND `subject`.`semester`=%s""", 
+            (dept, sem)
+        )
+        s = cursor.fetchall()
+    return render_template("admin/subjectView.html", val=s, dept=dept, sem=sem)
 
-@app.route('/delete_subject',methods=['POST','GET'])
+@app.route('/delete_subject', methods=['POST', 'GET'])
 @login_required
 def delete_subject():
-    id=request.args.get('lid')
-    cmd.execute("DELETE FROM subject WHERE sid=%s", (id,))
-    con.commit()
-    return '''<script>alert("Successfully Deleted");window.location='/view_subject'</script>'''
+    sid = request.args.get('lid')
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("DELETE FROM subject WHERE sid=%s", (sid,))
+        db.commit()
+        return '''<script>alert("Successfully deleted");window.location='/view_subject'</script>'''
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting subject: {str(e)}")
+        return '''<script>alert("Error occurred");window.location='/view_subject'</script>'''
 
-@app.route('/add_subject',methods=['POST','GET'])
+@app.route('/add_subject', methods=['POST', 'GET'])
 @login_required
 def add_subject():
     return render_template("admin/register_subject.html")
 
-@app.route('/register_subject',methods=['POST','GET'])
+@app.route('/register_subject', methods=['POST', 'GET'])
 @login_required
 def register_subject():
-    subject=request.form['text2']
-    code=request.form['text1']
-    dept=request.form['department']
-    sem=request.form['Semester']
-    staffid=request.form['Staff']
-    cmd.execute("INSERT INTO subject VALUES (null, %s, %s, %s, %s, %s)", (subject, code, dept, sem, staffid))
-    con.commit()
-    return '''<script>alert("Successfully Registred");window.location='/view_subject'</script>'''
+    db = get_db()
+    try:
+        subject = request.form['text2']
+        code = request.form['text1']
+        dept = request.form['department']
+        sem = request.form['Semester']
+        staffid = request.form['Staff']
+        
+        with db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO subject VALUES (null, %s, %s, %s, %s, %s)", 
+                (subject, code, dept, sem, staffid)
+            )
+        db.commit()
+        return '''<script>alert("Successfully registered");window.location='/view_subject'</script>'''
+    except Exception as e:
+        db.rollback()
+        print(f"Error registering subject: {str(e)}")
+        return '''<script>alert("Error occurred");window.location='/add_subject'</script>'''
 
 @app.route('/get_staff', methods=['POST'])
 def get_staff():
     dept = request.form['dept']
-    print(dept)
-    cmd.execute("SELECT `lid`,`name`,`teacher_code` FROM `teacher` WHERE `department`=%s", (dept,))
-    s = cmd.fetchall()
-    print(s)
+    db = get_db()
+    
+    with db.cursor() as cursor:
+        cursor.execute(
+            "SELECT `lid`, `name`, `teacher_code` FROM `teacher` WHERE `department`=%s", 
+            (dept,)
+        )
+        staff = cursor.fetchall()
 
-    staff_list = []
-    for r in s:
-        staff_list.append({
-            'id': r[0],
-            'name': f"{r[1]} (CODE:{r[2]})"
-        })
-    print(staff_list)
-    resp = make_response(jsonify(staff_list))
-    resp.status_code = 200
-    resp.headers['Access-Control-Allow-Origin'] = '*'
-    return resp
+    staff_list = [{
+        'id': s['lid'],
+        'name': f"{s['name']} (CODE:{s['teacher_code']})"
+    } for s in staff]
+    
+    return jsonify(staff_list), 200
 
-@app.route('/add_timetable',methods=['post','get'])
+@app.route('/add_timetable', methods=['POST', 'GET'])
 @login_required
 def add_timetable():
     # staffid=session['lid']
@@ -346,63 +457,58 @@ def add_timetable():
     # session['dept']=dept
     return render_template("admin/addtimetable.html")
 
-@app.route('/addtimetable',methods=['post','get'])
+@app.route('/addtimetable', methods=['POST', 'GET'])
 @login_required
 def addtimetable():
-    dept=request.form['select']
-    # subj=request.form['select1']
-    sem=request.form['Semester']
-    # hour=request.form['select3']
-    session['semess']=sem
-    session['deptt']=dept
-    cmd.execute("SELECT * FROM timetable WHERE `dept`=%s AND `sem`=%s", (dept, sem))
-    s=cmd.fetchone()
-    if s is None:
-        a1 = []
-        cmd.execute("SELECT * FROM `subject` WHERE `department`=%s AND `semester`=%s", (dept, sem))
-        res = cmd.fetchall()
-        if res is not None:
-            for i in res:
-                a1.append(i[1])
-            hours_per_day = 7  # Number of hours in a day
-            timetable = generate_timetable(a1, hours_per_day)
-            print(type(timetable))
-            ll = []
-            for i in timetable:
-                print(i)
-                # ll.append(i[1])
-
-            print(timetable)
-            result_list = [timetable[key] for key in sorted(timetable.keys())]
-
-            # Flatten the list
-            flattened_list = [item for sublist in result_list for item in sublist]
-
-            print(flattened_list)
-            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Monday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[0], flattened_list[1], flattened_list[2], flattened_list[4], flattened_list[5], flattened_list[6]))
-            con.commit()
-
-            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Tuesday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[7], flattened_list[8], flattened_list[9], flattened_list[11], flattened_list[12], flattened_list[13]))
-            con.commit()
-
-            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Wednesday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[14], flattened_list[15], flattened_list[16], flattened_list[18], flattened_list[19], flattened_list[20]))
-            con.commit()
-
-            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Thursday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[21], flattened_list[22], flattened_list[23], flattened_list[25], flattened_list[26], flattened_list[27]))
-            con.commit()
-
-            cmd.execute("INSERT INTO timetable VALUES (null, %s, %s, 'Friday', %s, %s, %s, 'break', %s, %s, %s)", (dept, sem, flattened_list[28], flattened_list[29], flattened_list[30], flattened_list[32], flattened_list[33], flattened_list[34]))
-            con.commit()
-            cmd.execute("SELECT `day`,`h1`,`h2`,`h3`,`h4`,`h5`,`h6`,`h7` FROM `timetable` WHERE `dept`=%s AND `sem`=%s", (dept, sem))
-            res=cmd.fetchall()
-
-            return render_template("admin/timetable.html",res=res)
-        else:
-            return '''<script>alert("Already Added");window.location='/viewtimetable'</script>'''
-    else:
-        # return '''<script>alert("Already Added");window.location='/viewtimetable'</script>'''
-        return redirect('/viewtimetable')
+    dept = request.form['select']
+    sem = request.form['Semester']
+    session['semess'] = sem
+    session['deptt'] = dept
     
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM timetable WHERE `dept`=%s AND `sem`=%s", (dept, sem))
+        existing = cursor.fetchone()
+        
+        if existing:
+            return redirect('/viewtimetable')
+        
+        # Get subjects for this department and semester
+        cursor.execute(
+            "SELECT * FROM `subject` WHERE `department`=%s AND `semester`=%s", 
+            (dept, sem)
+        )
+        subjects = cursor.fetchall()
+        
+        if not subjects:
+            return '''<script>alert("No subjects found for this department and semester");window.location='/add_timetable'</script>'''
+        
+        # Extract subject names
+        subject_names = [s['subject'] for s in subjects]
+        
+        # Generate timetable
+        hours_per_day = 7
+        timetable = generate_timetable(subject_names, hours_per_day)
+        
+        # Flatten the timetable
+        result_list = [timetable[key] for key in sorted(timetable.keys())]
+        flattened = [item for sublist in result_list for item in sublist]
+        
+        # Insert timetable for each day
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+        for i, day in enumerate(days):
+            start_idx = i * 7
+            cursor.execute(
+                """INSERT INTO timetable VALUES 
+                (null, %s, %s, %s, %s, %s, %s, 'break', %s, %s, %s)""",
+                (dept, sem, day, 
+                 flattened[start_idx], flattened[start_idx+1], flattened[start_idx+2],
+                 flattened[start_idx+4], flattened[start_idx+5], flattened[start_idx+6])
+            )
+    
+    db.commit()
+    return redirect('/viewtimetable')
+
 def generate_timetable(subjects, hours_per_day):
     import random
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -430,13 +536,18 @@ def generate_timetable(subjects, hours_per_day):
     
     return timetable
 
-
-@app.route('/viewtimetable',methods=['post','get'])
+@app.route('/viewtimetable', methods=['POST', 'GET'])
 @login_required
 def viewtimetable():
-    cmd.execute("SELECT `day`,`h1`,`h2`,`h3`,`h4`,`h5`,`h6`,`h7`,`tid` FROM `timetable` WHERE `dept`=%s AND `sem`=%s", (session['deptt'], session['semess']))
-    res = cmd.fetchall()
-    return render_template("admin/timetableview.html",res=res)
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute(
+            """SELECT `day`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `h7`, `tid` 
+            FROM `timetable` WHERE `dept`=%s AND `sem`=%s""", 
+            (session.get('deptt'), session.get('semess'))
+        )
+        res = cursor.fetchall()
+    return render_template("admin/timetableview.html", res=res)
 
 if __name__ == "__main__":
     app.run(debug=True)
