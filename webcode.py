@@ -335,5 +335,109 @@ def get_staff():
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
+@app.route('/add_timetable',methods=['post','get'])
+@login_required
+def add_timetable():
+    # staffid=session['lid']
+    # print("SELECT `department` FROM `teacher` WHERE `lid`='"+str(staffid)+"'")
+    # cmd.execute("SELECT `department` FROM `teacher` WHERE `lid`='"+str(staffid)+"'")
+    # s=cmd.fetchone()
+    # dept=s[0]
+    # session['dept']=dept
+    return render_template("admin/addtimetable.html")
+
+@app.route('/addtimetable',methods=['post','get'])
+@login_required
+def addtimetable():
+    dept=request.form['select']
+    # subj=request.form['select1']
+    sem=request.form['Semester']
+    # hour=request.form['select3']
+    session['semess']=sem
+    session['deptt']=dept
+    cmd.execute("SELECT * FROM timetable WHERE `dept`='"+str(dept)+"' AND `sem`='"+str(sem)+"'")
+    s=cmd.fetchone()
+    if s is None:
+        a1 = []
+        cmd.execute("SELECT * FROM `subject` WHERE `department`='" + dept + "' AND `semester`='" + sem + "' ")
+        res = cmd.fetchall()
+        if res is not None:
+            for i in res:
+                a1.append(i[1])
+            hours_per_day = 7  # Number of hours in a day
+            timetable = generate_timetable(a1, hours_per_day)
+            print(type(timetable))
+            ll = []
+            for i in timetable:
+                print(i)
+                # ll.append(i[1])
+
+            print(timetable)
+            result_list = [timetable[key] for key in sorted(timetable.keys())]
+
+            # Flatten the list
+            flattened_list = [item for sublist in result_list for item in sublist]
+
+            print(flattened_list)
+            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Monday','"+flattened_list[0]+"','"+flattened_list[1]+"','"+flattened_list[2]+"','break','"+flattened_list[4]+"','"+flattened_list[5]+"','"+flattened_list[6]+"')")
+            con.commit()
+
+            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Tuesday','"+flattened_list[7]+"','"+flattened_list[8]+"','"+flattened_list[9]+"','break','"+flattened_list[11]+"','"+flattened_list[12]+"','"+flattened_list[13]+"')")
+            con.commit()
+
+            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Wednesday','"+flattened_list[14]+"','"+flattened_list[15]+"','"+flattened_list[16]+"','break','"+flattened_list[18]+"','"+flattened_list[19]+"','"+flattened_list[20]+"')")
+            con.commit()
+
+            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Thursday','"+flattened_list[21]+"','"+flattened_list[22]+"','"+flattened_list[23]+"','break','"+flattened_list[25]+"','"+flattened_list[26]+"','"+flattened_list[27]+"')")
+            con.commit()
+
+            cmd.execute("insert into timetable values(null,'"+dept+"','"+sem+"','Friday','"+flattened_list[28]+"','"+flattened_list[29]+"','"+flattened_list[30]+"','break','"+flattened_list[32]+"','"+flattened_list[33]+"','"+flattened_list[34]+"')")
+            con.commit()
+            cmd.execute("SELECT `day`,`h1`,`h2`,`h3`,`h4`,`h5`,`h6`,`h7` FROM `timetable` WHERE `dept`='"+dept+"' AND `sem`='"+sem+"'")
+            res=cmd.fetchall()
+
+            return render_template("admin/timetable.html",res=res)
+        else:
+            return '''<script>alert("Already Added");window.location='/viewtimetable'</script>'''
+    else:
+        # return '''<script>alert("Already Added");window.location='/viewtimetable'</script>'''
+        return redirect('/viewtimetable')
+    
+def generate_timetable(subjects, hours_per_day):
+    import random
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    timetable = {}
+    
+    # Shuffle subjects to randomize distribution
+    shuffled_subjects = subjects.copy()
+    random.shuffle(shuffled_subjects)
+    
+    subject_index = 0
+    total_subjects = len(shuffled_subjects)
+    
+    for day in days:
+        day_schedule = []
+        for hour in range(hours_per_day):
+            if hour == 3:  # Break period
+                day_schedule.append('Break')
+            else:
+                if total_subjects > 0:
+                    day_schedule.append(shuffled_subjects[subject_index % total_subjects])
+                    subject_index += 1
+                else:
+                    day_schedule.append('Free')
+        timetable[day] = day_schedule
+    
+    return timetable
+
+
+@app.route('/viewtimetable',methods=['post','get'])
+@login_required
+def viewtimetable():
+    cmd.execute(
+        "SELECT `day`,`h1`,`h2`,`h3`,`h4`,`h5`,`h6`,`h7`,`tid` FROM `timetable` WHERE `dept`='" + str(session['deptt']) + "' AND `sem`='" +str(session['semess'])+ "'")
+    res = cmd.fetchall()
+    return render_template("admin/timetableview.html",res=res)
+
 if __name__ == "__main__":
     app.run(debug=True)
