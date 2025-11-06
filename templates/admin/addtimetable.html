@@ -1,0 +1,66 @@
+{% extends 'admin/adminindex.html' %}
+
+{% block body %}
+
+<div class="container py-5">
+  <div class="card shadow-lg border-0 rounded-4">
+    <div class="card-header bg-gradient bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">
+        <i class="fas fa-calendar-plus me-2"></i> Add Timetable
+      </h4>
+      <span class="badge bg-light text-primary px-3 py-2 fs-6">Admin Panel</span>
+    </div>
+
+    <div class="card-body p-4">
+      <form action="/addtimetable" method="post" class="row g-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Department -->
+        <div class="col-md-4">
+          <label for="department" class="form-label fw-semibold">Department</label>
+          <select class="form-select form-select-lg rounded-3" id="department" name="select" required>
+            <option disabled selected>-- Select Department --</option>
+            <option>CSE</option>
+            <option>EEE</option>
+            <option>ECE</option>
+            <option>AD</option>
+            <option>RE</option>
+            <option>MR</option>
+            <option>ME</option>
+          </select>
+        </div>
+
+        <!-- Semester -->
+        <div class="col-md-4">
+          <label for="semester" class="form-label fw-semibold">Semester</label>
+          <select class="form-select form-select-lg rounded-3" id="semester" name="Semester" required>
+            <option disabled selected>-- Select Semester --</option>
+            {% for s in range(1, 9) %}
+            <option>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Division -->
+        <div class="col-md-4">
+          <label for="division" class="form-label fw-semibold">Division</label>
+          <select class="form-select form-select-lg rounded-3" id="division" name="division" required>
+            <option disabled selected>-- Select Division --</option>
+            <option>A</option>
+            <option>B</option>
+            <option>C</option>
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="col-12 text-end">
+          <button type="submit" class="btn btn-success btn-lg px-4 rounded-3 shadow-sm">
+            <i class="fas fa-plus-circle me-2"></i> Add Timetable
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

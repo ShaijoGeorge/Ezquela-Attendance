@@ -1,0 +1,53 @@
+{% extends 'admin/adminindex.html' %}
+
+{% block body %}
+<div class="container py-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i> Update Timetable</h4>
+    </div>
+    <div class="card-body">
+      <form method="post" action="/updatetime">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="table-responsive">
+          <table class="table table-bordered text-center align-middle">
+            <thead class="table-primary">
+              <tr>
+                <th>Day</th>
+                <th>Period 1</th>
+                <th>Period 2</th>
+                <th>Period 3</th>
+                <th>Period 4</th>
+                <th>Period 5</th>
+                <th>Period 6</th>
+                <th>Period 7</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in res %}
+              <tr>
+                <th scope="row" class="bg-light">{{ i[0] }}
+                  <input type="hidden" name="id" value="{{ i[8] }}">
+                </th>
+                <td><input type="text" class="form-control" name="a1" value="{{ i[1] }}"></td>
+                <td><input type="text" class="form-control" name="a2" value="{{ i[2] }}"></td>
+                <td><input type="text" class="form-control" name="a3" value="{{ i[3] }}"></td>
+                <td><input type="text" class="form-control" name="a4" value="{{ i[4] }}"></td>
+                <td><input type="text" class="form-control" name="a5" value="{{ i[5] }}"></td>
+                <td><input type="text" class="form-control" name="a6" value="{{ i[6] }}"></td>
+                <td><input type="text" class="form-control" name="a7" value="{{ i[7] }}"></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="text-end mt-3">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i> Update Timetable</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
