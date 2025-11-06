@@ -110,3 +110,15 @@ venv.bak/
 static/photos/
 static/test/
 static/training-data/
+
+# Log files
+*.log
+
+# JSON files
+*.json
+
+# Xml files
+*.xml
+
+# IML files
+*.iml
