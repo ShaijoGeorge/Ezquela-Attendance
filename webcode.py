@@ -83,7 +83,8 @@ def user():
         password = request.form.get('textfield2', '')
         
         if not username or not password:
-            return '''<script>alert("Username and password required");window.location='/login'</script>'''
+            flash("Username and password required", "danger")
+            return redirect(url_for('user'))
         
         db = get_db()
         with db.cursor() as cursor:
@@ -94,7 +95,8 @@ def user():
             result = cursor.fetchone()
             
         if result is None:
-            return '''<script>alert("Invalid username or password");window.location='/login'</script>'''
+            flash("Invalid username or password", "danger")
+            return redirect(url_for('user'))
         
         session['lid'] = result['id']
         role = result['usertype']
@@ -142,11 +144,13 @@ def add_student():
 
         # Handle file upload
         if 'files' not in request.files:
-            return '''<script>alert("No file uploaded");window.location='/student_signup'</script>'''
+            flash("No file uploaded", "danger")
+            return redirect(url_for('student_signup'))
         
         img = request.files['files']
         if img.filename == '':
-            return '''<script>alert("No file selected");window.location='/student_signup'</script>'''
+            flash("No file selected", "danger")
+            return redirect(url_for('student_signup'))
 
         # Generate unique filename
         filename = secure_filename(img.filename)
@@ -162,7 +166,8 @@ def add_student():
         cnfpassword = request.form['cnfpassword']
         
         if password != cnfpassword:
-            return '''<script>alert("Password mismatch");window.location='/student_signup'</script>'''
+            flash("Password mismatch", "danger")
+            return redirect(url_for('student_signup'))
 
         # Database operations with transaction
         with db.cursor() as cursor:
@@ -179,12 +184,14 @@ def add_student():
                  dept, semester, division, unique_filename, guardian, guardian_phone)
             )
         db.commit()
-        return '''<script>alert("Successfully registered");window.location='/'</script>'''
+        flash("Successfully registered", "success")
+        return redirect(url_for('user'))
             
     except Exception as e:
         db.rollback()
         print(f"Error in add_student: {str(e)}")
-        return '''<script>alert("Registration failed");window.location='/student_signup'</script>'''
+        flash("Registration failed", "danger")
+        return redirect(url_for('student_signup'))
 
 @app.route('/admin_home', methods=['POST', 'GET'])
 @login_required
@@ -210,11 +217,13 @@ def delete_staff():
         with db.cursor() as cursor:
             cursor.execute("DELETE FROM teacher WHERE lid=%s", (tlid,))
         db.commit()
-        return '''<script>alert("Successfully deleted");window.location='/view_staff'</script>'''
+        flash("Successfully deleted", "success")
+        return redirect(url_for('view_staff'))
     except Exception as e:
         db.rollback()
         print(f"Error deleting staff: {str(e)}")
-        return '''<script>alert("Error occurred");window.location='/view_staff'</script>'''
+        flash("Error occurred", "danger")
+        return redirect(url_for('view_staff'))
 
 @app.route('/add_staff', methods=['POST', 'GET'])
 @login_required
@@ -246,7 +255,8 @@ def staffreg():
         cnfpassword = request.form['cnfpassword']
         
         if password != cnfpassword:
-            return '''<script>alert("Password mismatch");window.location='/add_staff'</script>'''
+            flash("Password mismatch", "danger")
+            return redirect(url_for('add_staff'))
         
         with db.cursor() as cursor:
             cursor.execute("INSERT INTO login VALUES (null, %s, %s, 'teacher')", (uname, password))
@@ -256,12 +266,14 @@ def staffreg():
                 (lid, fname, code, address, phone, email, qualification, dept, unique_filename)
             )
         db.commit()
-        return '''<script>alert("Successfully added");window.location='/view_staff'</script>'''
+        flash("Successfully added", "success")
+        return redirect(url_for('view_staff'))
         
     except Exception as e:
         db.rollback()
         print(f"Error in staffreg: {str(e)}")
-        return '''<script>alert("Error occurred");window.location='/add_staff'</script>'''
+        flash("Error occurred", "danger")
+        return redirect(url_for('add_staff'))
 
 @app.route('/edit_staff', methods=['POST', 'GET'])
 @login_required
@@ -311,12 +323,14 @@ def update_staff():
                     (fname, code, address, phone, email, qualification, dept, lid)
                 )
         db.commit()
-        return '''<script>alert("Successfully updated");window.location='/view_staff'</script>'''
+        flash("Successfully updated", "success")
+        return redirect(url_for('view_staff'))
         
     except Exception as e:
         db.rollback()
         print(f"Error updating staff: {str(e)}")
-        return '''<script>alert("Error occurred");window.location='/edit_staff'</script>'''
+        flash("Error occurred", "danger")
+        return redirect(url_for('edit_staff'))
 
 @app.route('/view_student', methods=['POST', 'GET'])
 @login_required
@@ -357,11 +371,13 @@ def delete_student():
         with db.cursor() as cursor:
             cursor.execute("DELETE FROM student WHERE lid=%s", (tlid,))
         db.commit()
-        return '''<script>alert("Successfully deleted");window.location='/view_student'</script>'''
+        flash("Successfully deleted", "success")
+        return redirect(url_for('view_student'))
     except Exception as e:
         db.rollback()
         print(f"Error deleting student: {str(e)}")
-        return '''<script>alert("Error occurred");window.location='/view_student'</script>'''
+        flash("Error occurred", "danger")
+        return redirect(url_for('view_student'))
 
 @app.route('/view_subject', methods=['POST', 'GET'])
 @login_required
@@ -393,11 +409,13 @@ def delete_subject():
         with db.cursor() as cursor:
             cursor.execute("DELETE FROM subject WHERE sid=%s", (sid,))
         db.commit()
-        return '''<script>alert("Successfully deleted");window.location='/view_subject'</script>'''
+        flash("Successfully deleted", "success")
+        return redirect(url_for('view_subject'))
     except Exception as e:
         db.rollback()
         print(f"Error deleting subject: {str(e)}")
-        return '''<script>alert("Error occurred");window.location='/view_subject'</script>'''
+        flash("Error occurred", "danger")
+        return redirect(url_for('view_subject'))
 
 @app.route('/add_subject', methods=['POST', 'GET'])
 @login_required
@@ -421,11 +439,13 @@ def register_subject():
                 (subject, code, dept, sem, staffid)
             )
         db.commit()
-        return '''<script>alert("Successfully registered");window.location='/view_subject'</script>'''
+        flash("Successfully registered", "success")
+        return redirect(url_for('view_subject'))
     except Exception as e:
         db.rollback()
         print(f"Error registering subject: {str(e)}")
-        return '''<script>alert("Error occurred");window.location='/add_subject'</script>'''
+        flash("Error occurred", "danger")
+        return redirect(url_for('add_subject'))
 
 @app.route('/get_staff', methods=['POST'])
 def get_staff():
@@ -481,7 +501,8 @@ def addtimetable():
         subjects = cursor.fetchall()
         
         if not subjects:
-            return '''<script>alert("No subjects found for this department and semester");window.location='/add_timetable'</script>'''
+            flash("No subjects found for this department and semester", "danger")
+            return redirect(url_for('add_timetable'))
         
         # Extract subject names
         subject_names = [s['subject'] for s in subjects]
