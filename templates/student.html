@@ -183,6 +183,15 @@
                 </div>
             
                 <div class="col-lg-7 right-side">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}" role="alert">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
                     <form class="staff-form" method="post" action="/add_student" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="row">

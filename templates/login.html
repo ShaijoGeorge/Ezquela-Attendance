@@ -110,6 +110,15 @@
             </div>
             <div class="col-md-6 right-side p-5">
                 <form action="/login" method="post">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}" role="alert">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <label style="font-weight: 400;">Username</label>

@@ -4,3 +4,4 @@ opencv-python
 flask-wtf
 werkzeug
 pillow
+dbutils
