@@ -228,7 +228,11 @@ def delete_staff():
 @app.route('/add_staff', methods=['POST', 'GET'])
 @login_required
 def add_staff():
-    return render_template("admin/staff_form.html")
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT dept FROM department")
+        dept = cursor.fetchall()
+    return render_template("admin/staff_form.html", dept=dept)
 
 @app.route('/staffreg', methods=['POST', 'GET'])
 @login_required
@@ -280,7 +284,12 @@ def staffreg():
 def edit_staff():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM teacher WHERE lid=%s", (request.args.get('lid'),))
+        cursor.execute(
+            """SELECT teacher.*, login.username 
+            FROM teacher JOIN login ON teacher.lid = login.id 
+            WHERE teacher.lid=%s""", 
+            (request.args.get('lid'),)
+        )
         res = cursor.fetchone()
         cursor.execute("SELECT dept FROM department")
         dept = cursor.fetchall()

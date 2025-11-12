@@ -66,20 +66,20 @@
               {% for i in val %}
               <tr>
                 <td>
-                  <img src="./static/photos/staffphoto/{{i[9]}}" alt="{{i[2]}}" class="rounded" width="80" height="80" style="object-fit: cover;">
+                  <img src="./static/photos/staffphoto/{{i.photo}}" alt="{{i.name}}" class="rounded" width="80" height="80" style="object-fit: cover;">
                 </td>
-                <td>{{i[2]}}</td>
-                <td>{{i[3]}}</td>
-                <td>{{i[4]}}</td>
-                <td>{{i[8]}}</td>
-                <td>{{i[5]}}</td>
-                <td>{{i[6]}}</td>
-                <td>{{i[7]}}</td>
+                <td>{{i.name}}</td>
+                <td>{{i.teacher_code}}</td>
+                <td>{{i.address}}</td>
+                <td>{{i.department}}</td>
+                <td>{{i.phone}}</td>
+                <td>{{i.email}}</td>
+                <td>{{i.qualification}}</td>
                 <td>
-                  <a href="/edit_staff?lid={{i[1]}}" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit"></i></a>
+                  <a href="/edit_staff?lid={{i.lid}}" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit"></i></a>
                 </td>
                 <td>
-                  <a href="/delete_staff?lid={{i[1]}}" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></a>
+                  <a href="/delete_staff?lid={{i.lid}}" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></a>
                 </td>
               </tr>
               {% endfor %}
