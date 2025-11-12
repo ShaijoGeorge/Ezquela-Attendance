@@ -24,46 +24,46 @@
         <form method="post" action="{% if val %}/update_staff{% else %}/staffreg{% endif %}" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           {% if val %}
-          <input type="hidden" name="lid" value="{{ val.lid }}">
+          <input type="hidden" name="lid" value="{{ val['lid'] }}">
           {% endif %}
           <div class="mb-3">
             <label for="tcode" class="form-label">Teacher Code</label>
-            <input type="text" name="text2" class="form-control" id="tcode" value="{{ val.teacher_code if val else '' }}" required>
+            <input type="text" name="text2" class="form-control" id="tcode" value="{{ val['teacher_code'] if val else '' }}" required>
           </div>
 
           <div class="row">
             <div class="col-md-6 mb-3">
               <label for="name" class="form-label">Name</label>
-              <input type="text" name="text1" class="form-control" id="name" value="{{ val.name if val else '' }}" required>
+              <input type="text" name="text1" class="form-control" id="name" value="{{ val['name'] if val else '' }}" required>
             </div>
 
             <div class="col-md-6 mb-3">
               <label for="uname" class="form-label">Username</label>
-              <input type="text" name="uname" class="form-control" id="uname" value="{{ val.username if val else '' }}" {% if val %}readonly{% else %}required{% endif %}>
+              <input type="text" name="uname" class="form-control" id="uname" value="{{ val['username'] if val else '' }}" {% if val %}readonly{% else %}required{% endif %}>
             </div>
           </div>
 
           <div class="mb-3">
             <label for="address" class="form-label">Address</label>
-            <textarea name="text3" class="form-control" id="address" rows="3" required>{{ val.address if val else '' }}</textarea>
+            <textarea name="text3" class="form-control" id="address" rows="3" required>{{ val['address'] if val else '' }}</textarea>
           </div>
 
           <div class="row">
             <div class="col-md-6 mb-3">
               <label for="phone" class="form-label">Phone</label>
-              <input type="text" name="text4" class="form-control" id="phone" value="{{ val.phone if val else '' }}" required>
+              <input type="text" name="text4" class="form-control" id="phone" value="{{ val['phone'] if val else '' }}" required>
             </div>
 
             <div class="col-md-6 mb-3">
               <label for="email" class="form-label">Email</label>
-              <input type="email" name="text5" class="form-control" id="email" value="{{ val.email if val else '' }}" required>
+              <input type="email" name="text5" class="form-control" id="email" value="{{ val['email'] if val else '' }}" required>
             </div>
           </div>
 
           <div class="row">
             <div class="col-md-6 mb-3">
               <label for="qualification" class="form-label">Qualification</label>
-              <input type="text" name="text6" class="form-control" id="qualification" value="{{ val.qualification if val else '' }}" required>
+              <input type="text" name="text6" class="form-control" id="qualification" value="{{ val['qualification'] if val else '' }}" required>
             </div>
 
             <div class="col-md-6 mb-3">
@@ -71,7 +71,7 @@
               <select name="select" id="department" class="form-select" required>
                 <option disabled {% if not val %}selected{% endif %}>-- Department --</option>
                 {% for d in dept %}
-                <option value="{{ d.dept }}" {% if val and val.department == d.dept %}selected{% endif %}>{{ d.dept }}</option>
+                <option value="{{ d.dept }}" {% if val and val['department'] == d.dept %}selected{% endif %}>{{ d.dept }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -79,9 +79,9 @@
 
           <div class="mb-3">
             <label for="photo" class="form-label">Photo</label>
-            {% if val and val.photo %}
+            {% if val and val['photo'] %}
             <div class="mb-2">
-              <img src="{{ url_for('static', filename='photos/staffphoto/' + val.photo) }}" alt="Staff Photo" class="img-thumbnail" width="150">
+              <img src="{{ url_for('static', filename='photos/staffphoto/' + val['photo']) }}" alt="Staff Photo" class="img-thumbnail" width="150">
             </div>
             {% endif %}
             <input type="file" name="files" class="form-control" id="photo">

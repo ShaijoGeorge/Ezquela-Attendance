@@ -360,6 +360,16 @@ def dept_search_student():
         res = cursor.fetchall()
     return render_template("admin/studentlist.html", val=res)
 
+@app.route('/dept_search_staff', methods=['POST', 'GET'])
+@login_required
+def dept_search_staff():
+    dept = request.form['select']
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM teacher WHERE department=%s", (dept,))
+        res = cursor.fetchall()
+    return render_template("admin/stafflist.html", val=res, dept=dept)
+
 @app.route('/edit_student', methods=['POST', 'GET'])
 @login_required
 def edit_student():
