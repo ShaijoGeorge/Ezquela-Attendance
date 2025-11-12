@@ -353,17 +353,23 @@ def view_student():
 @app.route('/dept_search_student', methods=['POST', 'GET'])
 @login_required
 def dept_search_student():
-    dept = request.form['select']
+    dept = request.form.get('selects')
+    if not dept or dept == '-- Department --':
+        flash("Please select a department to search for students.", "warning")
+        return redirect(url_for('view_student'))
     db = get_db()
     with db.cursor() as cursor:
         cursor.execute("SELECT * FROM student WHERE department=%s", (dept,))
         res = cursor.fetchall()
-    return render_template("admin/studentlist.html", val=res)
+    return render_template("admin/studentlist.html", val=res, dept=dept)
 
 @app.route('/dept_search_staff', methods=['POST', 'GET'])
 @login_required
 def dept_search_staff():
-    dept = request.form['select']
+    dept = request.form.get('select')
+    if not dept or dept == '-- Department --':
+        flash("Please select a department to search.", "warning")
+        return redirect(url_for('view_staff'))
     db = get_db()
     with db.cursor() as cursor:
         cursor.execute("SELECT * FROM teacher WHERE department=%s", (dept,))
@@ -406,8 +412,11 @@ def view_subject():
 @app.route('/view_subjects_dept_sem', methods=['POST', 'GET'])
 @login_required
 def view_subjects_dept_sem():
-    dept = request.form['select']
-    sem = request.form['select1']
+    dept = request.form.get('select')
+    sem = request.form.get('select1')
+    if not dept or dept == '--Department--' or not sem or sem == '--Semester--':
+        flash("Please select both department and semester to view subjects.", "warning")
+        return redirect(url_for('view_subject'))
     db = get_db()
     with db.cursor() as cursor:
         cursor.execute(
@@ -499,8 +508,13 @@ def add_timetable():
 @app.route('/addtimetable', methods=['POST', 'GET'])
 @login_required
 def addtimetable():
-    dept = request.form['select']
-    sem = request.form['Semester']
+    dept = request.form.get('select')
+    sem = request.form.get('Semester')
+    
+    if not dept or dept == '--Department--' or not sem or sem == '--Select Semester--':
+        flash("Please select both department and semester to create a timetable.", "warning")
+        return redirect(url_for('add_timetable'))
+
     session['semess'] = sem
     session['deptt'] = dept
     
@@ -510,6 +524,7 @@ def addtimetable():
         existing = cursor.fetchone()
         
         if existing:
+            flash("Timetable for this department and semester already exists.", "info")
             return redirect('/viewtimetable')
         
         # Get subjects for this department and semester
@@ -520,7 +535,7 @@ def addtimetable():
         subjects = cursor.fetchall()
         
         if not subjects:
-            flash("No subjects found for this department and semester", "danger")
+            flash("No subjects found for this department and semester. Cannot create timetable.", "danger")
             return redirect(url_for('add_timetable'))
         
         # Extract subject names
@@ -547,6 +562,7 @@ def addtimetable():
             )
     
     db.commit()
+    flash("Timetable created successfully.", "success")
     return redirect('/viewtimetable')
 
 def generate_timetable(subjects, hours_per_day):
@@ -588,6 +604,26 @@ def viewtimetable():
         )
         res = cursor.fetchall()
     return render_template("admin/timetableview.html", res=res)
+
+@app.route('/view_timetables', methods=['POST', 'GET'])
+@login_required
+def view_timetables():
+    dept = request.form.get('select')
+    sem = request.form.get('Semester')
+
+    if not dept or dept == '--Department--' or not sem or sem == '--Select Semester--':
+        flash("Please select both department and semester to view the timetable.", "warning")
+        return redirect(url_for('add_timetable')) # Redirect to add_timetable or view_timetable as appropriate
+
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute(
+            """SELECT `day`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `h7`, `tid` 
+            FROM `timetable` WHERE `dept`=%s AND `sem`=%s""", 
+            (dept, sem)
+        )
+        res = cursor.fetchall()
+    return render_template("admin/timetableview.html", res=res, dept=dept, sem=sem)
 
 if __name__ == "__main__":
     app.run(debug=True)
