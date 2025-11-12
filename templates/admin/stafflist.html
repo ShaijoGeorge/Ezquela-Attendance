@@ -82,6 +82,10 @@
                   <a href="/delete_staff?lid={{i.lid}}" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></a>
                 </td>
               </tr>
+              {% else %}
+              <tr>
+                <td colspan="10" class="text-center">No staff found.</td>
+              </tr>
               {% endfor %}
             </tbody>
           </table>
