@@ -122,3 +122,6 @@ static/training-data/
 
 # IML files
 *.iml
+
+# Database files
+*.sql
