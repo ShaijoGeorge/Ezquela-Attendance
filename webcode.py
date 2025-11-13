@@ -197,7 +197,83 @@ def add_student():
 @login_required
 def admin_home():
     get_user_role(session['lid'])
-    return render_template('admin/base.html')
+    return render_template('admin/adminindex.html')
+
+@app.route('/admin/departments', methods=['GET'])
+@login_required
+def manage_departments():
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM department ORDER BY `department_name`")
+        departments = cursor.fetchall()
+    return render_template('admin/departments.html', departments=departments)
+
+@app.route('/admin/add_department', methods=['POST'])
+@login_required
+def add_department():
+    department_name = request.form.get('department_name', '').strip()
+    if not department_name:
+        flash("Department name cannot be empty.", "danger")
+        return redirect(url_for('manage_departments'))
+
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("INSERT INTO department (department_name) VALUES (%s)", (department_name,))
+        db.commit()
+        flash("Department added successfully.", "success")
+    except pymysql.IntegrityError:
+        db.rollback()
+        flash("Department with this name already exists.", "danger")
+    except Exception as e:
+        db.rollback()
+        print(f"Error adding department: {str(e)}")
+        flash("An error occurred while adding the department.", "danger")
+    
+    return redirect(url_for('manage_departments'))
+
+@app.route('/admin/update_department/<int:department_id>', methods=['POST'])
+@login_required
+def update_department(department_id):
+    department_name = request.form.get('department_name', '').strip()
+    if not department_name:
+        flash("Department name cannot be empty.", "danger")
+        return redirect(url_for('manage_departments'))
+
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                "UPDATE department SET department_name = %s WHERE department_id = %s",
+                (department_name, department_id)
+            )
+        db.commit()
+        flash("Department updated successfully.", "success")
+    except pymysql.IntegrityError:
+        db.rollback()
+        flash("Another department with this name already exists.", "danger")
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating department: {str(e)}")
+        flash("An error occurred while updating the department.", "danger")
+        
+    return redirect(url_for('manage_departments'))
+
+@app.route('/admin/delete_department/<int:department_id>', methods=['GET'])
+@login_required
+def delete_department(department_id):
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("DELETE FROM department WHERE department_id = %s", (department_id,))
+        db.commit()
+        flash("Department deleted successfully.", "success")
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting department: {str(e)}")
+        flash("An error occurred while deleting the department.", "danger")
+    
+    return redirect(url_for('manage_departments'))
 
 @app.route('/view_staff', methods=['POST', 'GET'])
 @login_required
@@ -230,7 +306,7 @@ def delete_staff():
 def add_staff():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT dept FROM department")
+        cursor.execute("SELECT department_name FROM department")
         dept = cursor.fetchall()
     return render_template("admin/staff_form.html", dept=dept)
 
@@ -291,7 +367,7 @@ def edit_staff():
             (request.args.get('lid'),)
         )
         res = cursor.fetchone()
-        cursor.execute("SELECT dept FROM department")
+        cursor.execute("SELECT department_name FROM department")
         dept = cursor.fetchall()
     return render_template("admin/staff_form.html", val=res, dept=dept)
 
