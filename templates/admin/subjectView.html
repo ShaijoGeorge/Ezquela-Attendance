@@ -70,11 +70,11 @@
           <tbody>
             {% for i in val %}
             <tr>
-              <td>{{ i[6] }}</td>
-              <td>{{ i[2] }}</td>
-              <td>{{ i[1] }} (CODE: {{ i[7] }})</td>
+              <td>{{ i['name'] }}</td>
+              <td>{{ i['subject'] }}</td>
+              <td>{{ i['code'] }} (CODE: {{ i['teacher_code'] }})</td>
               <td>
-                <a href="/delete_subject?lid={{ i[0] }}" class="btn btn-sm btn-danger">
+                <a href="/delete_subject?lid={{ i['sid'] }}" class="btn btn-sm btn-danger">
                   <i class="fas fa-trash-alt"></i> Delete
                 </a>
               </td>

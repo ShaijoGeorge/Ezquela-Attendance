@@ -44,27 +44,31 @@
             <table class="table table-bordered text-center align-middle">
             <thead class="table-primary">
                 <tr>
-                <th>Subject Code</th>
-                <th>Subject</th>
-                <th>Hour</th>
-                <th>Actions</th>
+                    <th>Day</th>
+                    <th>Hour 1</th>
+                    <th>Hour 2</th>
+                    <th>Hour 3</th>
+                    <th>Hour 4</th>
+                    <th>Hour 5</th>
+                    <th>Hour 6</th>
+                    <th>Hour 7</th>
                 </tr>
             </thead>
             <tbody>
-                {% for i in val %}
+                {% for i in res %}
                 <tr>
-                <td>{{ i[2] }}</td>
-                <td>{{ i[3] }}</td>
-                <td>{{ i[1] }}</td>
-                <td>
-                    <a href="/delete_timetable?lid={{ i[0] }}" class="btn btn-danger btn-sm">
-                    <i class="fas fa-trash-alt"></i> Delete
-                    </a>
-                </td>
+                    <td>{{ i['day'] }}</td>
+                    <td>{{ i['h1'] }}</td>
+                    <td>{{ i['h2'] }}</td>
+                    <td>{{ i['h3'] }}</td>
+                    <td>{{ i['h4'] }}</td>
+                    <td>{{ i['h5'] }}</td>
+                    <td>{{ i['h6'] }}</td>
+                    <td>{{ i['h7'] }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" class="text-center">No timetable found.</td>
+                    <td colspan="8" class="text-center">No timetable found.</td>
                 </tr>
                 {% endfor %}
             </tbody>

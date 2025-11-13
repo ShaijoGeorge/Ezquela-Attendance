@@ -76,16 +76,16 @@
               {% for i in val %}
               <tr>
                 <td>
-                  <img src="./static/photos/studentphoto/{{ i[11] }}" alt="Student Photo" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                  <img src="./static/photos/studentphoto/{{ i['photo'] }}" alt="Student Photo" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
                 </td>
-                <td>{{ i[3] }}</td>
-                <td>{{ i[2] }}</td>
-                <td>{{ i[6] }}</td>
-                <td>{{ i[5] }}</td>
-                <td>{{ i[8] }}</td>
+                <td>{{ i['regno'] }}</td>
+                <td>{{ i['name'] }}</td>
+                <td>{{ i['email'] }}</td>
+                <td>{{ i['phone'] }}</td>
+                <td>{{ i['department'] }}</td>
                 <td>
-                  <a href="/edit_student?lid={{ i[1] }}" class="btn btn-sm btn-warning me-1"><i class="fas fa-edit"></i></a>
-                  <a href="/delete_student?lid={{ i[1] }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this student?');"><i class="fas fa-trash-alt"></i></a>
+                  <a href="/edit_student?lid={{ i['lid'] }}" class="btn btn-sm btn-warning me-1"><i class="fas fa-edit"></i></a>
+                  <a href="/delete_student?lid={{ i['lid'] }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this student?');"><i class="fas fa-trash-alt"></i></a>
                 </td>
               </tr>
               {% else %}
