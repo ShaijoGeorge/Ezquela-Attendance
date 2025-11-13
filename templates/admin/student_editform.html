@@ -1,0 +1,119 @@
+{% extends 'admin/adminindex.html' %}
+
+{% block body %}
+  <div class="container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="h3 mb-0">Edit Student</h1>
+      <a href="/view_student" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Student List</a>
+    </div>
+
+    <!-- Registration Form Card -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <form method="post" action="/update_student" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="lid" value="{{ i['lid'] }}">
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="name" class="form-label">Name</label>
+              <input type="text" name="text1" class="form-control" id="name" value="{{ i['name'] if i else '' }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="regno" class="form-label">Registration No</label>
+              <input type="text" name="text2" class="form-control" id="regno" value="{{ i['regno'] if i else '' }}" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="address" class="form-label">Address</label>
+            <textarea name="text3" class="form-control" id="address" rows="3" required>{{ i['address'] if i else '' }}</textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="phone" class="form-label">Phone</label>
+              <input type="text" name="text4" class="form-control" id="phone" value="{{ i['phone'] if i else '' }}" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" name="text5" class="form-control" id="email" value="{{ i['email'] if i else '' }}" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="dob" class="form-label">Date of Birth</label>
+              <input type="date" name="text6" class="form-control" id="dob" value="{{ i['dob'] if i else '' }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="department" class="form-label">Department</label>
+              <select name="select" id="department" class="form-select" required>
+                <option disabled>-- Department --</option>
+                <option {% if i['department']=="CSE" %} selected {% endif %}>CSE</option>
+                <option {% if i['department']=="EEE" %} selected {% endif %}>EEE</option>
+                <option {% if i['department']=="ECE" %} selected {% endif %}>ECE</option>
+                <option {% if i['department']=="AD" %} selected {% endif %}>AD</option>
+                <option {% if i['department']=="RE" %} selected {% endif %}>RE</option>
+                <option {% if i['department']=="MR" %} selected {% endif %}>MR</option>
+                <option {% if i['department']=="ME" %} selected {% endif %}>ME</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="semester" class="form-label">Semester</label>
+              <select name="select1" id="semester" class="form-select" required>
+                <option disabled>-- Semester --</option>
+                {% for s in range(1,9) %}
+                  <option {% if i['semester']==s %} selected {% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="division" class="form-label">Division</label>
+              <input type="text" name="select3" class="form-control" id="division" value="{{ i['division'] if i else '' }}" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="guardian" class="form-label">Guardian Name</label>
+              <input type="text" name="guardian" class="form-control" id="guardian" value="{{ i['gname'] if i else '' }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="guardian_phone" class="form-label">Guardian Phone</label>
+              <input type="text" name="phone" class="form-control" id="guardian_phone" value="{{ i['gnumber'] if i else '' }}" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="photo" class="form-label">Photo</label>
+            {% if i and i['photo'] %}
+            <div class="mb-2">
+              <img src="{{ url_for('static', filename='photos/studentphoto/' + i['photo']) }}" alt="Student Photo" class="img-thumbnail" width="150">
+            </div>
+            {% endif %}
+            <input type="file" name="files" class="form-control" id="photo">
+          </div>
+
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i> Update</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}

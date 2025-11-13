@@ -387,6 +387,62 @@ def edit_student():
         res = cursor.fetchone()
     return render_template("admin/student_editform.html", i=res)
 
+
+@app.route('/update_student', methods=['POST'])
+@login_required
+def update_student():
+    db = get_db()
+    try:
+        fname = request.form['text1']
+        regno = request.form['text2']
+        address = request.form['text3']
+        phone = request.form['text4']
+        email = request.form['text5']
+        dob = request.form['text6']
+        dept = request.form['select']
+        semester = request.form['select1']
+        division = request.form['select3']
+        guardian = request.form['guardian']
+        guardian_phone = request.form['phone']
+        lid = request.form['lid']
+        
+        img = request.files.get('files')
+        
+        with db.cursor() as cursor:
+            if img and img.filename:
+                filename = secure_filename(img.filename)
+                unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                upload_path = os.path.join('./static/photos/studentphoto', unique_filename)
+                os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+                img.save(upload_path)
+                
+                cursor.execute(
+                    """UPDATE student SET name=%s, regno=%s, address=%s, 
+                    phone=%s, email=%s, dob=%s, department=%s, semester=%s, 
+                    division=%s, photo=%s, gname=%s, gnumber=%s
+                    WHERE lid=%s""", 
+                    (fname, regno, address, phone, email, dob, dept, semester, 
+                     division, unique_filename, guardian, guardian_phone, lid)
+                )
+            else:
+                cursor.execute(
+                    """UPDATE student SET name=%s, regno=%s, address=%s, 
+                    phone=%s, email=%s, dob=%s, department=%s, semester=%s, 
+                    division=%s, gname=%s, gnumber=%s
+                    WHERE lid=%s""", 
+                    (fname, regno, address, phone, email, dob, dept, semester, 
+                     division, guardian, guardian_phone, lid)
+                )
+        db.commit()
+        flash("Successfully updated", "success")
+        return redirect(url_for('view_student'))
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating student: {str(e)}")
+        flash("Error occurred", "danger")
+        return redirect(url_for('edit_student', lid=request.form['lid']))
+
 @app.route('/delete_student', methods=['POST', 'GET'])
 @login_required
 def delete_student():
