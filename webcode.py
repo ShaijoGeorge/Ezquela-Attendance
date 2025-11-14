@@ -123,7 +123,11 @@ def logout():
 
 @app.route('/student_signup', methods=['POST', 'GET'])
 def student_signup():
-    return render_template("student.html")
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT department_name FROM department")
+        dept = cursor.fetchall()
+    return render_template("student.html", dept=dept)
 
 @app.route('/add_student', methods=['POST', 'GET'])
 def add_student():
@@ -282,7 +286,9 @@ def view_staff():
     with db.cursor() as cursor:
         cursor.execute("SELECT * FROM teacher")
         res = cursor.fetchall()
-    return render_template("admin/stafflist.html", val=res)
+        cursor.execute("SELECT department_name FROM department")
+        dept_list = cursor.fetchall()
+    return render_template("admin/stafflist.html", val=res, dept_list=dept_list)
 
 @app.route('/delete_staff', methods=['POST', 'GET'])
 @login_required
@@ -424,7 +430,9 @@ def view_student():
     with db.cursor() as cursor:
         cursor.execute("SELECT * FROM student")
         res = cursor.fetchall()
-    return render_template("admin/studentlist.html", val=res)
+        cursor.execute("SELECT department_name FROM department")
+        dept_list = cursor.fetchall()
+    return render_template("admin/studentlist.html", val=res, dept_list=dept_list)
 
 @app.route('/dept_search_student', methods=['POST', 'GET'])
 @login_required
@@ -461,7 +469,9 @@ def edit_student():
     with db.cursor() as cursor:
         cursor.execute("SELECT * FROM student WHERE lid=%s", (tlid,))
         res = cursor.fetchone()
-    return render_template("admin/student_editform.html", i=res)
+        cursor.execute("SELECT department_name FROM department")
+        dept = cursor.fetchall()
+    return render_template("admin/student_editform.html", i=res, dept=dept)
 
 
 @app.route('/update_student', methods=['POST'])
@@ -539,7 +549,11 @@ def delete_student():
 @app.route('/view_subject', methods=['POST', 'GET'])
 @login_required
 def view_subject():
-    return render_template("admin/subjectView.html")
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT department_name FROM department")
+        dept_list = cursor.fetchall()
+    return render_template("admin/subjectView.html", dept_list=dept_list)
 
 @app.route('/view_subjects_dept_sem', methods=['POST', 'GET'])
 @login_required
@@ -580,7 +594,11 @@ def delete_subject():
 @app.route('/add_subject', methods=['POST', 'GET'])
 @login_required
 def add_subject():
-    return render_template("admin/register_subject.html")
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT department_name FROM department")
+        dept_list = cursor.fetchall()
+    return render_template("admin/register_subject.html", dept_list=dept_list)
 
 @app.route('/register_subject', methods=['POST', 'GET'])
 @login_required
@@ -629,13 +647,11 @@ def get_staff():
 @app.route('/add_timetable', methods=['POST', 'GET'])
 @login_required
 def add_timetable():
-    # staffid=session['lid']
-    # print("SELECT `department` FROM `teacher` WHERE `lid`='"+str(staffid)+"'")
-    # cmd.execute("SELECT `department` FROM `teacher` WHERE `lid`='"+str(staffid)+"'")
-    # s=cmd.fetchone()
-    # dept=s[0]
-    # session['dept']=dept
-    return render_template("admin/addtimetable.html")
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT department_name FROM department")
+        dept_list = cursor.fetchall()
+    return render_template("admin/addtimetable.html", dept_list=dept_list)
 
 @app.route('/addtimetable', methods=['POST', 'GET'])
 @login_required
@@ -735,7 +751,9 @@ def viewtimetable():
             (session.get('deptt'), session.get('semess'))
         )
         res = cursor.fetchall()
-    return render_template("admin/timetableview.html", res=res)
+        cursor.execute("SELECT department_name FROM department")
+        dept_list = cursor.fetchall()
+    return render_template("admin/timetableview.html", res=res, dept_list=dept_list)
 
 @app.route('/view_timetables', methods=['POST', 'GET'])
 @login_required

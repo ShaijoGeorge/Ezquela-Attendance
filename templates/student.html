@@ -247,13 +247,9 @@
                                         <label for="department" class="form-label">Department</label>
                                         <select class="form-select" name="select" id="department">
                                             <option disabled selected>Select Department</option>
-                                            <option>CSE</option>
-                                            <option>EEE</option>
-                                            <option>ECE</option>
-                                            <option>AD</option>
-                                            <option>RE</option>
-                                            <option>MR</option>
-                                            <option>ME</option>
+                                            {% for d in dept %}
+                                            <option value="{{ d.department_name }}">{{ d.department_name }}</option>
+                                            {% endfor %}
                                         </select>
                                     </div>
                                 

@@ -25,8 +25,8 @@
             <label for="department" class="form-label">Department</label>
             <select name="department" id="select" class="form-select" required>
               <option disabled selected>-- Department --</option>
-              {% for dept_name in ['CSE','EEE','ECE','AD','RE','MR','ME'] %}
-              <option>{{ dept_name }}</option>
+              {% for d in dept_list %}
+              <option>{{ d.department_name }}</option>
               {% endfor %}
             </select>
           </div>

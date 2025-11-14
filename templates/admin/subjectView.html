@@ -27,8 +27,8 @@
             <label for="department" class="form-label">Department</label>
             <select class="form-select" id="department" name="select" required>
               <option disabled selected>--Department--</option>
-              {% for dept_name in ['CSE','EEE','ECE','AD','RE','MR','ME'] %}
-              <option {% if dept==dept_name %} selected {% endif %}>{{ dept_name }}</option>
+              {% for d in dept_list %}
+              <option {% if dept and dept == d.department_name %} selected {% endif %}>{{ d.department_name }}</option>
               {% endfor %}
             </select>
           </div>

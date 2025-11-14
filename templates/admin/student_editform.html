@@ -61,14 +61,10 @@
             <div class="col-md-6 mb-3">
               <label for="department" class="form-label">Department</label>
               <select name="select" id="department" class="form-select" required>
-                <option disabled>-- Department --</option>
-                <option {% if i['department']=="CSE" %} selected {% endif %}>CSE</option>
-                <option {% if i['department']=="EEE" %} selected {% endif %}>EEE</option>
-                <option {% if i['department']=="ECE" %} selected {% endif %}>ECE</option>
-                <option {% if i['department']=="AD" %} selected {% endif %}>AD</option>
-                <option {% if i['department']=="RE" %} selected {% endif %}>RE</option>
-                <option {% if i['department']=="MR" %} selected {% endif %}>MR</option>
-                <option {% if i['department']=="ME" %} selected {% endif %}>ME</option>
+                <option disabled {% if not i %}selected{% endif %}>-- Department --</option>
+                {% for d in dept %}
+                <option value="{{ d.department_name }}" {% if i and i['department'] == d.department_name %}selected{% endif %}>{{ d.department_name }}</option>
+                {% endfor %}
               </select>
             </div>
           </div>
