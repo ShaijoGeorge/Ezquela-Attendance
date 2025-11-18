@@ -140,7 +140,7 @@ def add_student():
         phone = request.form['text4']
         email = request.form['text5']
         dob = request.form['text6']
-        dept = request.form['select']
+        dept_name = request.form['select']
         semester = request.form['select1']
         division = request.form['select3']
         guardian = request.form['guardian']
@@ -175,17 +175,33 @@ def add_student():
 
         # Database operations with transaction
         with db.cursor() as cursor:
+            
+            # Get department_id from department_name
+            cursor.execute(
+                "SELECT department_id FROM department WHERE department_name = %s", 
+                (dept_name,)
+            )
+            dept_result = cursor.fetchone()
+            if not dept_result:
+                flash("Invalid department selected", "danger")
+                return redirect(url_for('student_signup'))
+            
+            dept_id = dept_result['department_id']
+
+            # Insert student data
             cursor.execute(
                 "INSERT INTO login VALUES (null, %s, %s, 'student')", 
                 (uname, password)
             )
             lid = db.insert_id()
             
+            # Insert with department_id instead of department
             cursor.execute(
-                """INSERT INTO student VALUES 
+                """INSERT INTO student (stid, lid, name, regno, address, phone, email, 
+                dob, semester, division, photo, gname, gnumber, department_id) VALUES 
                 (null, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 (lid, fname, regno, address, phone, email, dob, 
-                 dept, semester, division, unique_filename, guardian, guardian_phone)
+                 semester, division, unique_filename, guardian, guardian_phone, dept_id)
             )
         db.commit()
         flash("Successfully registered", "success")
@@ -428,7 +444,12 @@ def update_staff():
 def view_student():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM student")
+        # Join with department table to get department_name
+        cursor.execute("""
+            SELECT s.*, d.department_name as department 
+            FROM student s 
+            LEFT JOIN department d ON s.department_id = d.department_id
+        """)
         res = cursor.fetchall()
         cursor.execute("SELECT department_name FROM department")
         dept_list = cursor.fetchall()
@@ -438,14 +459,35 @@ def view_student():
 @login_required
 def dept_search_student():
     dept = request.form.get('selects')
+    sem = request.form.get('select1')
+    
     if not dept or dept == '-- Department --':
         flash("Please select a department to search for students.", "warning")
         return redirect(url_for('view_student'))
+    
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM student WHERE department=%s", (dept,))
+        # Join with department table and filter by department_name
+        if sem and sem != '-- Semester --':
+            cursor.execute("""
+                SELECT s.*, d.department_name as department 
+                FROM student s 
+                LEFT JOIN department d ON s.department_id = d.department_id 
+                WHERE d.department_name = %s AND s.semester = %s
+            """, (dept, sem))
+        else:
+            cursor.execute("""
+                SELECT s.*, d.department_name as department 
+                FROM student s 
+                LEFT JOIN department d ON s.department_id = d.department_id 
+                WHERE d.department_name = %s
+            """, (dept,))
         res = cursor.fetchall()
-    return render_template("admin/studentlist.html", val=res, dept=dept)
+        
+        cursor.execute("SELECT department_name FROM department")
+        dept_list = cursor.fetchall()
+    
+    return render_template("admin/studentlist.html", val=res, dept_list=dept_list, dept=dept, sem=sem)
 
 @app.route('/dept_search_staff', methods=['POST', 'GET'])
 @login_required
@@ -467,7 +509,13 @@ def edit_student():
     session['slid'] = tlid
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM student WHERE lid=%s", (tlid,))
+        # Join with department table to get department_name
+        cursor.execute("""
+            SELECT s.*, d.department_name as department 
+            FROM student s 
+            LEFT JOIN department d ON s.department_id = d.department_id 
+            WHERE s.lid = %s
+        """, (tlid,))
         res = cursor.fetchone()
         cursor.execute("SELECT department_name FROM department")
         dept = cursor.fetchall()
@@ -485,7 +533,7 @@ def update_student():
         phone = request.form['text4']
         email = request.form['text5']
         dob = request.form['text6']
-        dept = request.form['select']
+        dept_name = request.form['select']
         semester = request.form['select1']
         division = request.form['select3']
         guardian = request.form['guardian']
@@ -495,6 +543,18 @@ def update_student():
         img = request.files.get('files')
         
         with db.cursor() as cursor:
+            # Get department_id from department_name
+            cursor.execute(
+                "SELECT department_id FROM department WHERE department_name = %s", 
+                (dept_name,)
+            )
+            dept_result = cursor.fetchone()
+            if not dept_result:
+                flash("Invalid department selected", "danger")
+                return redirect(url_for('edit_student', lid=lid))
+            
+            dept_id = dept_result['department_id']
+            
             if img and img.filename:
                 filename = secure_filename(img.filename)
                 unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
@@ -504,19 +564,19 @@ def update_student():
                 
                 cursor.execute(
                     """UPDATE student SET name=%s, regno=%s, address=%s, 
-                    phone=%s, email=%s, dob=%s, department=%s, semester=%s, 
+                    phone=%s, email=%s, dob=%s, department_id=%s, semester=%s, 
                     division=%s, photo=%s, gname=%s, gnumber=%s
                     WHERE lid=%s""", 
-                    (fname, regno, address, phone, email, dob, dept, semester, 
+                    (fname, regno, address, phone, email, dob, dept_id, semester, 
                      division, unique_filename, guardian, guardian_phone, lid)
                 )
             else:
                 cursor.execute(
                     """UPDATE student SET name=%s, regno=%s, address=%s, 
-                    phone=%s, email=%s, dob=%s, department=%s, semester=%s, 
+                    phone=%s, email=%s, dob=%s, department_id=%s, semester=%s, 
                     division=%s, gname=%s, gnumber=%s
                     WHERE lid=%s""", 
-                    (fname, regno, address, phone, email, dob, dept, semester, 
+                    (fname, regno, address, phone, email, dob, dept_id, semester, 
                      division, guardian, guardian_phone, lid)
                 )
         db.commit()
@@ -526,8 +586,8 @@ def update_student():
     except Exception as e:
         db.rollback()
         print(f"Error updating student: {str(e)}")
-        flash("Error occurred", "danger")
-        return redirect(url_for('edit_student', lid=request.form['lid']))
+        flash(f"Error occurred: {str(e)}", "danger")
+        return redirect(url_for('edit_student', lid=request.form.get('lid')))
 
 @app.route('/delete_student', methods=['POST', 'GET'])
 @login_required

@@ -71,7 +71,7 @@
               <select name="select" id="department" class="form-select" required>
                 <option disabled {% if not val %}selected{% endif %}>-- Department --</option>
                 {% for d in dept %}
-                <option value="{{ d.dept }}" {% if val and val['department'] == d.dept %}selected{% endif %}>{{ d.dept }}</option>
+                <option value="{{ d.department_name }}" {% if val and val['department'] == d.department_name %}selected{% endif %}>{{ d.department_name }}</option>
                 {% endfor %}
               </select>
             </div>
