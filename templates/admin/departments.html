@@ -28,6 +28,7 @@
                         <thead class="table-primary">
                             <tr>
                                 <th scope="col">Department Name</th>
+                                <th scope="col">Course</th>
                                 <th scope="col" class="text-end">Actions</th>
                             </tr>
                         </thead>
@@ -35,6 +36,7 @@
                             {% for department in departments %}
                             <tr>
                                 <td>{{ department.department_name }}</td>
+                                <td>{{ department.course_name }}</td>
                                 <td class="text-end">
                                     <button class="btn btn-outline-primary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#editModal-{{ department.department_id }}">
                                         <i class="fas fa-edit"></i> Edit
@@ -73,6 +75,15 @@
                             <label for="department_name" class="form-label">Department Name</label>
                             <input type="text" class="form-control" id="department_name" name="department_name" required>
                         </div>
+                        <div class="mb-3">
+                            <label for="course_id" class="form-label">Course</label>
+                            <select class="form-control" id="course_id" name="course_id" required>
+                                <option value="">-- Select Course --</option>
+                                {% for course in courses %}
+                                    <option value="{{ course.course_id }}">{{ course.course_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -98,6 +109,14 @@
                             <div class="mb-3">
                                 <label for="department_name-{{ department.department_id }}" class="form-label">Department Name</label>
                                 <input type="text" class="form-control" id="department_name-{{ department.department_id }}" name="department_name" value="{{ department.department_name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="course_id-{{ department.department_id }}" class="form-label">Course</label>
+                                <select class="form-control" id="course_id-{{ department.department_id }}" name="course_id" required>
+                                    {% for course in courses %}
+                                        <option value="{{ course.course_id }}" {% if course.course_id == department.course_id %}selected{% endif %}>{{ course.course_name }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                         <div class="modal-footer">

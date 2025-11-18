@@ -217,29 +217,41 @@ def add_student():
 @login_required
 def admin_home():
     get_user_role(session['lid'])
-    return render_template('admin/adminindex.html')
+    return render_template('admin/base.html')
 
 @app.route('/admin/departments', methods=['GET'])
 @login_required
 def manage_departments():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM department ORDER BY `department_name`")
+        cursor.execute("""
+            SELECT d.*, c.course_name 
+            FROM department d 
+            LEFT JOIN courses c ON d.course_id = c.course_id 
+            ORDER BY d.department_name
+        """)
         departments = cursor.fetchall()
-    return render_template('admin/departments.html', departments=departments)
+        cursor.execute("SELECT * FROM courses ORDER BY course_name")
+        courses = cursor.fetchall()
+    return render_template('admin/departments.html', departments=departments, courses=courses)
 
 @app.route('/admin/add_department', methods=['POST'])
 @login_required
 def add_department():
     department_name = request.form.get('department_name', '').strip()
-    if not department_name:
-        flash("Department name cannot be empty.", "danger")
+    course_id = request.form.get('course_id')
+
+    if not department_name or not course_id:
+        flash("All fields are required.", "danger")
         return redirect(url_for('manage_departments'))
 
     db = get_db()
     try:
         with db.cursor() as cursor:
-            cursor.execute("INSERT INTO department (department_name) VALUES (%s)", (department_name,))
+            cursor.execute(
+                "INSERT INTO department (department_name, course_id) VALUES (%s, %s)",
+                (department_name, course_id)
+            )
         db.commit()
         flash("Department added successfully.", "success")
     except pymysql.IntegrityError:
@@ -256,16 +268,18 @@ def add_department():
 @login_required
 def update_department(department_id):
     department_name = request.form.get('department_name', '').strip()
-    if not department_name:
-        flash("Department name cannot be empty.", "danger")
+    course_id = request.form.get('course_id')
+
+    if not department_name or not course_id:
+        flash("All fields are required.", "danger")
         return redirect(url_for('manage_departments'))
 
     db = get_db()
     try:
         with db.cursor() as cursor:
             cursor.execute(
-                "UPDATE department SET department_name = %s WHERE department_id = %s",
-                (department_name, department_id)
+                "UPDATE department SET department_name = %s, course_id = %s WHERE department_id = %s",
+                (department_name, course_id, department_id)
             )
         db.commit()
         flash("Department updated successfully.", "success")
@@ -294,6 +308,89 @@ def delete_department(department_id):
         flash("An error occurred while deleting the department.", "danger")
     
     return redirect(url_for('manage_departments'))
+
+@app.route('/admin/courses', methods=['GET'])
+@login_required
+def manage_courses():
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM courses ORDER BY course_name")
+        courses = cursor.fetchall()
+    return render_template('admin/courses.html', courses=courses)
+
+@app.route('/admin/add_course', methods=['POST'])
+@login_required
+def add_course():
+    course_name = request.form.get('course_name', '').strip()
+    course_code = request.form.get('course_code', '').strip()
+
+    if not course_name or not course_code:
+        flash("All fields are required.", "danger")
+        return redirect(url_for('manage_courses'))
+
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO courses (course_name, course_code) VALUES (%s, %s)",
+                (course_name, course_code)
+            )
+        db.commit()
+        flash("Course added successfully.", "success")
+    except pymysql.IntegrityError:
+        db.rollback()
+        flash("A course with this name or code already exists.", "danger")
+    except Exception as e:
+        db.rollback()
+        print(f"Error adding course: {str(e)}")
+        flash("An error occurred while adding the course.", "danger")
+    
+    return redirect(url_for('manage_courses'))
+
+@app.route('/admin/update_course/<int:course_id>', methods=['POST'])
+@login_required
+def update_course(course_id):
+    course_name = request.form.get('course_name', '').strip()
+    course_code = request.form.get('course_code', '').strip()
+
+    if not course_name or not course_code:
+        flash("All fields are required.", "danger")
+        return redirect(url_for('manage_courses'))
+
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                "UPDATE courses SET course_name = %s, course_code = %s WHERE course_id = %s",
+                (course_name, course_code, course_id)
+            )
+        db.commit()
+        flash("Course updated successfully.", "success")
+    except pymysql.IntegrityError:
+        db.rollback()
+        flash("Another course with this name or code already exists.", "danger")
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating course: {str(e)}")
+        flash("An error occurred while updating the course.", "danger")
+        
+    return redirect(url_for('manage_courses'))
+
+@app.route('/admin/delete_course/<int:course_id>', methods=['GET'])
+@login_required
+def delete_course(course_id):
+    db = get_db()
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("DELETE FROM courses WHERE course_id = %s", (course_id,))
+        db.commit()
+        flash("Course deleted successfully.", "success")
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting course: {str(e)}")
+        flash("An error occurred while deleting the course.", "danger")
+    
+    return redirect(url_for('manage_courses'))
 
 @app.route('/view_staff', methods=['POST', 'GET'])
 @login_required

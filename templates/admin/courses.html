@@ -1,0 +1,109 @@
+{% extends 'admin/base.html' %}
+
+{% block body %}
+<div class="container mt-4">
+    <h2 class="mb-4">Manage Courses</h2>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Add Course Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Add New Course</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('add_course') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="course_name">Course Name</label>
+                        <input type="text" class="form-control" id="course_name" name="course_name" required>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="course_code">Course Code</label>
+                        <input type="text" class="form-control" id="course_code" name="course_code" required>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="course_code">Course Code</label>
+                        <input type="text" class="form-control" id="course_code" name="course_code" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Course</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Course List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Existing Courses</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Course Name</th>
+                        <th>Course Code</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td>{{ course.course_name }}</td>
+                        <td>{{ course.course_code }}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#editModal-{{ course.course_id }}">Edit</button>
+                            <a href="{{ url_for('delete_course', course_id=course.course_id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this course?');">Delete</a>
+                        </td>
+                    </tr>
+
+                    <!-- Edit Modal -->
+                    <div class="modal fade" id="editModal-{{ course.course_id }}" tabindex="-1" role="dialog" aria-labelledby="editModalLabel-{{ course.course_id }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editModalLabel-{{ course.course_id }}">Edit Course</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <form action="{{ url_for('update_course', course_id=course.course_id) }}" method="POST">
+                                    <div class="modal-body">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="form-group">
+                                            <label for="course_name-{{ course.course_id }}">Course Name</label>
+                                            <input type="text" class="form-control" id="course_name-{{ course.course_id }}" name="course_name" value="{{ course.course_name }}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="course_code-{{ course.course_id }}">Course Code</label>
+                                            <input type="text" class="form-control" id="course_code-{{ course.course_id }}" name="course_code" value="{{ course.course_code }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
