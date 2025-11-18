@@ -1,0 +1,156 @@
+{% extends 'admin/adminindex.html' %}
+
+{% block body %}
+<style>
+    /* Header banner */
+    .header-banner {
+        background: linear-gradient(135deg, #4B79FF, #6A9BFF);
+        padding: 45px 20px;
+        border-radius: 12px;
+        color: white;
+        text-align: center;
+        margin-bottom: 35px;
+    }
+
+    .profile-photo {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0px 6px 15px rgba(0,0,0,0.15);
+        margin-bottom: 15px;
+    }
+
+    /* TWO COLUMN BOXES */
+    .two-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+    }
+
+    @media(max-width: 900px) {
+        .two-columns {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Column container */
+    .column-box {
+        border: 1px solid #d9d9d9;
+        border-radius: 12px;
+        padding: 20px 25px;
+        background: #ffffff;
+    }
+
+    .section-title {
+        font-weight: 700;
+        font-size: 18px;
+        margin-bottom: 18px;
+        color: #333;
+    }
+
+    /* Info row */
+    .info-row {
+        padding: 12px 0;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        font-size: 14px;
+        color: #555;
+    }
+
+    .info-value {
+        font-size: 15px;
+        color: #222;
+        margin-top: 2px;
+    }
+
+</style>
+
+<div class="container py-3">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-user-graduate me-2"></i> Student Profile</h1>
+        <a href="/studentlist" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Back to List
+        </a>
+    </div>
+
+    <!-- Profile Banner -->
+    <div class="header-banner shadow-sm">
+        {% if student['photo'] %}
+            <img src="/static/photos/studentphoto/{{ student['photo'] }}" class="profile-photo">
+        {% else %}
+            <img src="/static/images/default_profile.png" class="profile-photo">
+        {% endif %}
+
+        <h2 class="mb-1">{{ student['name'] }}</h2>
+        <p class="mb-0" style="opacity:.9">{{ student['regno'] }}</p>
+    </div>
+
+    <!-- TWO COLUMN SECTION -->
+    <div class="two-columns">
+
+        <!-- Left Column: Academic -->
+        <div class="column-box">
+            <div class="section-title"><i class="fas fa-graduation-cap me-2"></i>Academic Details</div>
+
+            <div class="info-row">
+                <div class="info-label">Department</div>
+                <div class="info-value">{{ student['department'] }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Course</div>
+                <div class="info-value">{{ student['course'] }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Semester</div>
+                <div class="info-value">{{ student['semester'] }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Date of Birth</div>
+                <div class="info-value">{{ student['dob'] }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Gender</div>
+                <div class="info-value">{{ student['gender'] }}</div>
+            </div>
+        </div>
+
+        <!-- Right Column: Contact -->
+        <div class="column-box">
+            <div class="section-title"><i class="fas fa-address-book me-2"></i>Contact Details</div>
+
+            <div class="info-row">
+                <div class="info-label">Email</div>
+                <div class="info-value">{{ student['email'] }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Mobile Number</div>
+                <div class="info-value">{{ student['phone'] }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Address</div>
+                <div class="info-value">{{ student['address'] }}</div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

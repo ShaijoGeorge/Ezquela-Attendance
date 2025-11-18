@@ -523,7 +523,25 @@ def staffreg():
         flash(f"Error occurred: {str(e)}", "danger")
         return redirect(url_for('add_staff'))
 
-@app.route('/edit_staff', methods=['POST', 'GET'])
+@app.route('/view_staff_details', methods=['GET'])
+@login_required
+def view_staff_details():
+    lid = request.args.get('lid')
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("""
+            SELECT t.*, d.department_name as department
+            FROM teacher t
+            LEFT JOIN department d ON t.department_id = d.department_id
+            WHERE t.lid = %s
+        """, (lid,))
+        staff = cursor.fetchone()
+    
+    if staff:
+        return render_template("admin/staff_view.html", staff=staff)
+    else:
+        flash("Staff member not found.", "danger")
+        return redirect(url_for('view_staff'))
 @login_required
 def edit_staff():
     db = get_db()
@@ -599,6 +617,27 @@ def update_staff():
         print(f"Error updating staff: {str(e)}")
         flash(f"Error occurred: {str(e)}", "danger")
         return redirect(url_for('edit_staff', lid=lid))
+
+@app.route('/view_student_details', methods=['GET'])
+@login_required
+def view_student_details():
+    lid = request.args.get('lid')
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("""
+            SELECT s.*, d.department_name as department, c.course_name as course
+            FROM student s
+            LEFT JOIN department d ON s.department_id = d.department_id
+            LEFT JOIN courses c ON d.course_id = c.course_id
+            WHERE s.lid = %s
+        """, (lid,))
+        student = cursor.fetchone()
+    
+    if student:
+        return render_template("admin/student_view.html", student=student)
+    else:
+        flash("Student not found.", "danger")
+        return redirect(url_for('view_student'))
 
 @app.route('/view_student', methods=['POST', 'GET'])
 @login_required
