@@ -11,7 +11,16 @@
 
         <form action="/view_timetables" method="post" class="row g-3 mb-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="col-md-5">
+            <div class="col-md-4">
+                <label for="course" class="form-label">Course</label>
+                <select class="form-select" id="course" name="select_course" required>
+                    <option disabled selected>--Course--</option>
+                    {% for c in course_list %}
+                    <option {% if course and course == c.course_name %} selected {% endif %}>{{ c.course_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
             <label for="department" class="form-label">Department</label>
             <select class="form-select" id="department" name="select" required>
                 <option disabled selected>--Department--</option>
@@ -21,7 +30,7 @@
             </select>
             </div>
 
-            <div class="col-md-5">
+            <div class="col-md-2">
             <label for="semester" class="form-label">Semester</label>
             <select class="form-select" id="semester" name="Semester" required>
                 <option disabled selected>--Select Semester--</option>

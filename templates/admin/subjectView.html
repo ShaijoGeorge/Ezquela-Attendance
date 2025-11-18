@@ -23,9 +23,18 @@
         <form action="/view_subjects_dept_sem" method="post" class="row g-3">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-          <div class="col-md-5">
+          <div class="col-md-4">
+            <label for="course" class="form-label">Course</label>
+            <select class="form-select" id="course" name="select_course">
+              <option disabled selected>--Course--</option>
+              {% for c in course_list %}
+              <option {% if course and course == c.course_name %} selected {% endif %}>{{ c.course_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
             <label for="department" class="form-label">Department</label>
-            <select class="form-select" id="department" name="select" required>
+            <select class="form-select" id="department" name="select">
               <option disabled selected>--Department--</option>
               {% for d in dept_list %}
               <option {% if dept and dept == d.department_name %} selected {% endif %}>{{ d.department_name }}</option>
@@ -33,9 +42,9 @@
             </select>
           </div>
 
-          <div class="col-md-5">
+          <div class="col-md-2">
             <label for="semester" class="form-label">Semester</label>
-            <select class="form-select" id="semester" name="select1" required>
+            <select class="form-select" id="semester" name="select1">
               <option disabled selected>--Semester--</option>
               {% for s in range(1,9) %}
               <option {% if sem==s|string %} selected {% endif %}>{{ s }}</option>

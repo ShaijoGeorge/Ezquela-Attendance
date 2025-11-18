@@ -20,6 +20,27 @@
             </button>
         </div>
 
+        <!-- Filter Form -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form action="/admin/departments_search" method="post" class="row g-3 align-items-end">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="col-md-5">
+                        <label for="course" class="form-label">Course</label>
+                        <select name="select_course" id="course" class="form-select">
+                            <option disabled {% if not course %}selected{% endif %}>-- Course --</option>
+                            {% for c in courses %}
+                            <option value="{{ c.course_name }}" {% if course and course == c.course_name %} selected {% endif %}>{{ c.course_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i> Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Departments Table -->
         <div class="card shadow-sm">
             <div class="card-body">

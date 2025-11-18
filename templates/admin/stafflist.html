@@ -24,6 +24,15 @@
         <form action="/dept_search_staff" method="post" class="row g-3 align-items-end">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="col-md-4">
+            <label for="course" class="form-label">Course</label>
+            <select name="select_course" id="course" class="form-select">
+              <option disabled {% if not course %}selected{% endif %}>-- Course --</option>
+              {% for c in course_list %}
+              <option value="{{ c.course_name }}" {% if course and course == c.course_name %} selected {% endif %}>{{ c.course_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
             <label for="department" class="form-label">Department</label>
             <select name="select" id="department" class="form-select">
               <option disabled {% if not dept %}selected{% endif %}>-- Department --</option>
