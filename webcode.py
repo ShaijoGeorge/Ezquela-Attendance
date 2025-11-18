@@ -424,7 +424,12 @@ def delete_course(course_id):
 def view_staff():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM teacher")
+        # Join with department table to get department_name
+        cursor.execute("""
+            SELECT t.*, d.department_name as department 
+            FROM teacher t 
+            LEFT JOIN department d ON t.department_id = d.department_id
+        """)
         res = cursor.fetchall()
         cursor.execute("SELECT department_name FROM department")
         dept_list = cursor.fetchall()
@@ -469,7 +474,7 @@ def staffreg():
         phone = request.form['text4']
         email = request.form['text5']
         qualification = request.form['text6']
-        dept = request.form['select']
+        dept_name = request.form['select']  # This is department_name
         
         img = request.files['files']
         filename = secure_filename(img.filename)
@@ -487,11 +492,26 @@ def staffreg():
             return redirect(url_for('add_staff'))
         
         with db.cursor() as cursor:
+            # Get department_id from department_name
+            cursor.execute(
+                "SELECT department_id FROM department WHERE department_name = %s", 
+                (dept_name,)
+            )
+            dept_result = cursor.fetchone()
+            if not dept_result:
+                flash("Invalid department selected", "danger")
+                return redirect(url_for('add_staff'))
+            
+            dept_id = dept_result['department_id']
+            
             cursor.execute("INSERT INTO login VALUES (null, %s, %s, 'teacher')", (uname, password))
             lid = db.insert_id()
+            
             cursor.execute(
-                "INSERT INTO teacher VALUES (null, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
-                (lid, fname, code, address, phone, email, qualification, dept, unique_filename)
+                """INSERT INTO teacher (tid, lid, name, teacher_code, address, phone, 
+                email, qualification, photo, department_id) VALUES 
+                (null, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", 
+                (lid, fname, code, address, phone, email, qualification, unique_filename, dept_id)
             )
         db.commit()
         flash("Successfully added", "success")
@@ -500,7 +520,7 @@ def staffreg():
     except Exception as e:
         db.rollback()
         print(f"Error in staffreg: {str(e)}")
-        flash("Error occurred", "danger")
+        flash(f"Error occurred: {str(e)}", "danger")
         return redirect(url_for('add_staff'))
 
 @app.route('/edit_staff', methods=['POST', 'GET'])
@@ -508,10 +528,13 @@ def staffreg():
 def edit_staff():
     db = get_db()
     with db.cursor() as cursor:
+        # Join to get department_name
         cursor.execute(
-            """SELECT teacher.*, login.username 
-            FROM teacher JOIN login ON teacher.lid = login.id 
-            WHERE teacher.lid=%s""", 
+            """SELECT t.*, l.username, d.department_name as department 
+            FROM teacher t 
+            JOIN login l ON t.lid = l.id 
+            LEFT JOIN department d ON t.department_id = d.department_id 
+            WHERE t.lid=%s""", 
             (request.args.get('lid'),)
         )
         res = cursor.fetchone()
@@ -530,12 +553,24 @@ def update_staff():
         phone = request.form['text4']
         email = request.form['text5']
         qualification = request.form['text6']
-        dept = request.form['select']
+        dept_name = request.form['select']  # This is department_name
         lid = request.form['lid']
         
         img = request.files.get('files')
         
         with db.cursor() as cursor:
+            # Get department_id from department_name
+            cursor.execute(
+                "SELECT department_id FROM department WHERE department_name = %s", 
+                (dept_name,)
+            )
+            dept_result = cursor.fetchone()
+            if not dept_result:
+                flash("Invalid department selected", "danger")
+                return redirect(url_for('edit_staff', lid=lid))
+            
+            dept_id = dept_result['department_id']
+            
             if img and img.filename:
                 filename = secure_filename(img.filename)
                 unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
@@ -545,15 +580,15 @@ def update_staff():
                 
                 cursor.execute(
                     """UPDATE teacher SET name=%s, teacher_code=%s, address=%s, 
-                    phone=%s, email=%s, qualification=%s, department=%s, photo=%s 
+                    phone=%s, email=%s, qualification=%s, department_id=%s, photo=%s 
                     WHERE lid=%s""", 
-                    (fname, code, address, phone, email, qualification, dept, unique_filename, lid)
+                    (fname, code, address, phone, email, qualification, dept_id, unique_filename, lid)
                 )
             else:
                 cursor.execute(
                     """UPDATE teacher SET name=%s, teacher_code=%s, address=%s, 
-                    phone=%s, email=%s, qualification=%s, department=%s WHERE lid=%s""", 
-                    (fname, code, address, phone, email, qualification, dept, lid)
+                    phone=%s, email=%s, qualification=%s, department_id=%s WHERE lid=%s""", 
+                    (fname, code, address, phone, email, qualification, dept_id, lid)
                 )
         db.commit()
         flash("Successfully updated", "success")
@@ -562,8 +597,8 @@ def update_staff():
     except Exception as e:
         db.rollback()
         print(f"Error updating staff: {str(e)}")
-        flash("Error occurred", "danger")
-        return redirect(url_for('edit_staff'))
+        flash(f"Error occurred: {str(e)}", "danger")
+        return redirect(url_for('edit_staff', lid=lid))
 
 @app.route('/view_student', methods=['POST', 'GET'])
 @login_required
@@ -633,16 +668,16 @@ def dept_search_staff():
     db = get_db()
     with db.cursor() as cursor:
         query = """
-            SELECT t.* 
+            SELECT t.*, d.department_name as department 
             FROM teacher t
-            LEFT JOIN department d ON t.department = d.department_name
+            LEFT JOIN department d ON t.department_id = d.department_id
             LEFT JOIN courses c ON d.course_id = c.course_id
             WHERE 1=1
         """
         params = []
 
         if dept and dept != '-- Department --':
-            query += " AND t.department = %s"
+            query += " AND d.department_name = %s"
             params.append(dept)
 
         if course and course != '-- Course --':
@@ -784,25 +819,25 @@ def view_subjects_dept_sem():
     db = get_db()
     with db.cursor() as cursor:
         query = """
-            SELECT `subject`.*, `teacher`.`name`, `teacher`.`teacher_code` 
-            FROM `teacher` 
-            JOIN `subject` ON `subject`.`staff_lid`=`teacher`.`lid`
-            LEFT JOIN `department` ON `subject`.`department` = `department`.`department_name`
-            LEFT JOIN `courses` ON `department`.`course_id` = `courses`.`course_id`
+            SELECT s.*, t.name, t.teacher_code, d.department_name as department 
+            FROM subject s 
+            JOIN teacher t ON s.staff_lid = t.lid 
+            LEFT JOIN department d ON s.department_id = d.department_id
+            LEFT JOIN courses c ON d.course_id = c.course_id
             WHERE 1=1
         """
         params = []
 
         if dept and dept != '--Department--':
-            query += " AND `subject`.`department` = %s"
+            query += " AND d.department_name = %s"
             params.append(dept)
         
         if sem and sem != '--Semester--':
-            query += " AND `subject`.`semester` = %s"
+            query += " AND s.semester = %s"
             params.append(sem)
 
         if course and course != '--Course--':
-            query += " AND `courses`.`course_name` = %s"
+            query += " AND c.course_name = %s"
             params.append(course)
 
         cursor.execute(query, tuple(params))
@@ -848,14 +883,28 @@ def register_subject():
     try:
         subject = request.form['text2']
         code = request.form['text1']
-        dept = request.form['department']
+        dept_name = request.form['department']
         sem = request.form['Semester']
         staffid = request.form['Staff']
         
         with db.cursor() as cursor:
+            # Get department_id from department_name
             cursor.execute(
-                "INSERT INTO subject VALUES (null, %s, %s, %s, %s, %s)", 
-                (subject, code, dept, sem, staffid)
+                "SELECT department_id FROM department WHERE department_name = %s", 
+                (dept_name,)
+            )
+            dept_result = cursor.fetchone()
+            if not dept_result:
+                flash("Invalid department selected", "danger")
+                return redirect(url_for('add_subject'))
+            
+            dept_id = dept_result['department_id']
+            
+            # Insert with department_id
+            cursor.execute(
+                """INSERT INTO subject (sid, subject, code, semester, staff_lid, department_id) 
+                VALUES (null, %s, %s, %s, %s, %s)""", 
+                (subject, code, sem, staffid, dept_id)
             )
         db.commit()
         flash("Successfully registered", "success")
@@ -863,18 +912,22 @@ def register_subject():
     except Exception as e:
         db.rollback()
         print(f"Error registering subject: {str(e)}")
-        flash("Error occurred", "danger")
+        flash(f"Error occurred: {str(e)}", "danger")
         return redirect(url_for('add_subject'))
 
 @app.route('/get_staff', methods=['POST'])
 def get_staff():
-    dept = request.form['dept']
+    dept_name = request.form['dept']
     db = get_db()
     
     with db.cursor() as cursor:
+        # Join with department table to filter by department_name
         cursor.execute(
-            "SELECT `lid`, `name`, `teacher_code` FROM `teacher` WHERE `department`=%s", 
-            (dept,)
+            """SELECT t.lid, t.name, t.teacher_code 
+            FROM teacher t 
+            LEFT JOIN department d ON t.department_id = d.department_id 
+            WHERE d.department_name = %s""", 
+            (dept_name,)
         )
         staff = cursor.fetchall()
 
@@ -897,29 +950,45 @@ def add_timetable():
 @app.route('/addtimetable', methods=['POST', 'GET'])
 @login_required
 def addtimetable():
-    dept = request.form.get('select')
+    dept_name = request.form.get('select')
     sem = request.form.get('Semester')
     
-    if not dept or dept == '--Department--' or not sem or sem == '--Select Semester--':
+    if not dept_name or dept_name == '-- Select Department --' or not sem or sem == '-- Select Semester --':
         flash("Please select both department and semester to create a timetable.", "warning")
         return redirect(url_for('add_timetable'))
 
     session['semess'] = sem
-    session['deptt'] = dept
+    session['deptt'] = dept_name
     
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM timetable WHERE `dept`=%s AND `sem`=%s", (dept, sem))
+        # Get department_id
+        cursor.execute(
+            "SELECT department_id FROM department WHERE department_name = %s", 
+            (dept_name,)
+        )
+        dept_result = cursor.fetchone()
+        if not dept_result:
+            flash("Invalid department selected", "danger")
+            return redirect(url_for('add_timetable'))
+        
+        dept_id = dept_result['department_id']
+        
+        # Check if timetable exists using department_id
+        cursor.execute(
+            "SELECT * FROM timetable WHERE department_id = %s AND sem = %s", 
+            (dept_id, sem)
+        )
         existing = cursor.fetchone()
         
         if existing:
             flash("Timetable for this department and semester already exists.", "info")
             return redirect('/viewtimetable')
         
-        # Get subjects for this department and semester
+        # Get subjects for this department and semester using department_id
         cursor.execute(
-            "SELECT * FROM `subject` WHERE `department`=%s AND `semester`=%s", 
-            (dept, sem)
+            "SELECT * FROM subject WHERE department_id = %s AND semester = %s", 
+            (dept_id, sem)
         )
         subjects = cursor.fetchall()
         
@@ -938,16 +1007,16 @@ def addtimetable():
         result_list = [timetable[key] for key in sorted(timetable.keys())]
         flattened = [item for sublist in result_list for item in sublist]
         
-        # Insert timetable for each day
+        # Insert timetable for each day with department_id
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
         for i, day in enumerate(days):
             start_idx = i * 7
             cursor.execute(
-                """INSERT INTO timetable VALUES 
-                (null, %s, %s, %s, %s, %s, %s, 'break', %s, %s, %s)""",
-                (dept, sem, day, 
+                """INSERT INTO timetable (tid, sem, day, h1, h2, h3, h4, h5, h6, h7, department_id) 
+                VALUES (null, %s, %s, %s, %s, %s, 'break', %s, %s, %s, %s)""",
+                (sem, day, 
                  flattened[start_idx], flattened[start_idx+1], flattened[start_idx+2],
-                 flattened[start_idx+4], flattened[start_idx+5], flattened[start_idx+6])
+                 flattened[start_idx+4], flattened[start_idx+5], flattened[start_idx+6], dept_id)
             )
     
     db.commit()
@@ -986,39 +1055,52 @@ def generate_timetable(subjects, hours_per_day):
 def viewtimetable():
     db = get_db()
     with db.cursor() as cursor:
+        # Get department_id from session department name
+        dept_name = session.get('deptt')
         cursor.execute(
-            """SELECT `day`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `h7`, `tid` 
-            FROM `timetable` WHERE `dept`=%s AND `sem`=%s""", 
-            (session.get('deptt'), session.get('semess'))
+            "SELECT department_id FROM department WHERE department_name = %s", 
+            (dept_name,)
         )
-        res = cursor.fetchall()
+        dept_result = cursor.fetchone()
+        
+        if dept_result:
+            dept_id = dept_result['department_id']
+            cursor.execute(
+                """SELECT day, h1, h2, h3, h4, h5, h6, h7, tid 
+                FROM timetable WHERE department_id = %s AND sem = %s""", 
+                (dept_id, session.get('semess'))
+            )
+            res = cursor.fetchall()
+        else:
+            res = []
+            
         cursor.execute("SELECT department_name FROM department")
         dept_list = cursor.fetchall()
         cursor.execute("SELECT course_name FROM courses")
         course_list = cursor.fetchall()
-    return render_template("admin/timetableview.html", res=res, dept_list=dept_list, course_list=course_list)
+    return render_template("admin/timetable.html", res=res, dept_list=dept_list, course_list=course_list)
 
 @app.route('/view_timetables', methods=['POST', 'GET'])
 @login_required
 def view_timetables():
-    dept = request.form.get('select')
+    dept_name = request.form.get('select')
     sem = request.form.get('Semester')
     course = request.form.get('select_course')
 
     db = get_db()
     with db.cursor() as cursor:
         query = """
-            SELECT tt.`day`, tt.`h1`, tt.`h2`, tt.`h3`, tt.`h4`, tt.`h5`, tt.`h6`, tt.`h7`, tt.`tid` 
-            FROM `timetable` tt
-            LEFT JOIN department d ON tt.dept = d.department_name
+            SELECT tt.day, tt.h1, tt.h2, tt.h3, tt.h4, tt.h5, tt.h6, tt.h7, tt.tid 
+            FROM timetable tt
+            LEFT JOIN department d ON tt.department_id = d.department_id
             LEFT JOIN courses c ON d.course_id = c.course_id
             WHERE 1=1
         """
         params = []
 
-        if dept and dept != '--Department--':
-            query += " AND tt.dept = %s"
-            params.append(dept)
+        if dept_name and dept_name != '--Department--':
+            query += " AND d.department_name = %s"
+            params.append(dept_name)
         
         if sem and sem != '--Select Semester--':
             query += " AND tt.sem = %s"
@@ -1036,7 +1118,7 @@ def view_timetables():
         cursor.execute("SELECT course_name FROM courses")
         course_list = cursor.fetchall()
 
-    return render_template("admin/timetableview.html", res=res, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course)
+    return render_template("admin/timetableview.html", res=res, dept_list=dept_list, course_list=course_list, dept=dept_name, sem=sem, course=course)
 
 if __name__ == "__main__":
     app.run(debug=True)
