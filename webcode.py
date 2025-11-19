@@ -469,25 +469,32 @@ def add_staff():
 def staffreg():
     db = get_db()
     try:
-        fname = request.form['text1']
-        code = request.form['text2']
-        address = request.form['text3']
-        phone = request.form['text4']
-        email = request.form['text5']
-        qualification = request.form['text6']
-        dept_name = request.form['select']  # This is department_name
-        gender = request.form['gender']
+        fname = request.form.get('text1')
+        code = request.form.get('text2')
+        address = request.form.get('text3')
+        phone = request.form.get('text4')
+        email = request.form.get('text5')
+        qualification = request.form.get('text6')
+        dept_name = request.form.get('select')
+        gender = request.form.get('gender')
+        uname = request.form.get('uname')
+        password = request.form.get('password')
+        cnfpassword = request.form.get('cnfpassword')
+
+        if not all([fname, code, address, phone, email, qualification, dept_name, gender, uname, password, cnfpassword]):
+            flash("All fields are required.", "danger")
+            return redirect(url_for('add_staff'))
         
+        if 'files' not in request.files or request.files['files'].filename == '':
+            flash("Photo is required.", "danger")
+            return redirect(url_for('add_staff'))
+
         img = request.files['files']
         filename = secure_filename(img.filename)
         unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
         upload_path = os.path.join('./static/photos/staffphoto', unique_filename)
         os.makedirs(os.path.dirname(upload_path), exist_ok=True)
         img.save(upload_path)
-        
-        uname = request.form['uname']
-        password = request.form['password']
-        cnfpassword = request.form['cnfpassword']
         
         if password != cnfpassword:
             flash("Password mismatch", "danger")
@@ -568,6 +575,9 @@ def edit_staff():
 @login_required
 def update_staff():
     db = get_db()
+    # Get lid first, before any potential exceptions
+    lid = request.form.get('lid')
+    
     try:
         fname = request.form['text1']
         code = request.form['text2']
@@ -576,8 +586,12 @@ def update_staff():
         email = request.form['text5']
         qualification = request.form['text6']
         dept_name = request.form['select']  # This is department_name
-        gender = request.form['gender']
-        lid = request.form['lid']
+        gender = request.form.get('gender')  # Use .get() to avoid KeyError
+        
+        # Validate required fields
+        if not gender:
+            flash("Gender field is required", "danger")
+            return redirect(url_for('edit_staff', lid=lid))
         
         img = request.files.get('files')
         
@@ -621,6 +635,7 @@ def update_staff():
         db.rollback()
         print(f"Error updating staff: {str(e)}")
         flash(f"Error occurred: {str(e)}", "danger")
+        # lid is now safely defined at the start of the function
         return redirect(url_for('edit_staff', lid=lid))
 
 @app.route('/view_student_details', methods=['GET'])
