@@ -21,7 +21,7 @@
     <!-- Registration Form Card -->
     <div class="card shadow-sm">
       <div class="card-body">
-<form method="post" action="{{ url_for('update_staff') if val else url_for('staffreg') }}" enctype="multipart/form-data" novalidate>
+        <form method="post" action="{{ url_for('update_staff') if val else url_for('staffreg') }}" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           {% if val %}
           <input type="hidden" name="lid" value="{{ val['lid'] }}">
