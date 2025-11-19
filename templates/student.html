@@ -392,16 +392,109 @@
                 }
             }
         
-            // Form validation for password match
-            document.querySelector('.staff-form').addEventListener('submit', function(e) {
-                const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
+            document.addEventListener('DOMContentLoaded', function() {
+                const form = document.querySelector('.staff-form');
                 
-                if (password !== confirmPassword) {
-                e.preventDefault();
-                alert('Passwords do not match!');
-                document.getElementById('confirmPassword').focus();
-                }
+                form.addEventListener('submit', function(e) {
+                    let isValid = true;
+                    
+                    // Clear previous errors
+                    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                    document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+                    // Helper function to show error
+                    function showError(input, message) {
+                        isValid = false;
+                        input.classList.add('is-invalid');
+                        const error = document.createElement('div');
+                        error.className = 'invalid-feedback';
+                        error.textContent = message;
+                        input.parentNode.appendChild(error);
+                    }
+
+                    // 1. Check required text inputs
+                    const requiredInputs = [
+                        { id: 'imd', name: 'Full Name' },
+                        { id: 'rollNo', name: 'Register No' },
+                        { id: 'name', name: 'Address' },
+                        { id: 'rfid', name: 'Phone Number' },
+                        { id: 'email', name: 'Email' },
+                        { id: 'rlfid', name: 'Date of Birth' },
+                        { id: 'guardian', name: 'Guardian Name' },
+                        { id: 'guardianPhone', name: 'Guardian Phone' },
+                        { id: 'username', name: 'Username' },
+                        { id: 'password', name: 'Password' },
+                        { id: 'confirmPassword', name: 'Confirm Password' }
+                    ];
+
+                    requiredInputs.forEach(item => {
+                        const input = document.getElementById(item.id);
+                        if (!input.value.trim()) {
+                            showError(input, `${item.name} is required.`);
+                        }
+                    });
+
+                    // 2. Check email format
+                    const emailInput = document.getElementById('email');
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (emailInput.value.trim() && !emailRegex.test(emailInput.value)) {
+                        showError(emailInput, 'Please enter a valid email address.');
+                    }
+                    
+                    // 3. Check phone number format (simple check for digits)
+                    const phoneInput = document.getElementById('rfid');
+                    const guardianPhoneInput = document.getElementById('guardianPhone');
+                    const phoneRegex = /^\d{10,15}$/;
+                    if (phoneInput.value.trim() && !phoneRegex.test(phoneInput.value)) {
+                        showError(phoneInput, 'Please enter a valid phone number (10-15 digits).');
+                    }
+                    if (guardianPhoneInput.value.trim() && !phoneRegex.test(guardianPhoneInput.value)) {
+                        showError(guardianPhoneInput, 'Please enter a valid phone number (10-15 digits).');
+                    }
+
+                    // 4. Check select fields
+                    const selectFields = [
+                        { id: 'department', name: 'Department' },
+                        { id: 'semester', name: 'Semester' },
+                        { id: 'division', name: 'Division' }
+                    ];
+
+                    selectFields.forEach(item => {
+                        const select = document.getElementById(item.id);
+                        if (select.value.startsWith('Select')) {
+                            showError(select, `Please select a ${item.name}.`);
+                        }
+                    });
+
+                    // 5. Check gender radio buttons
+                    const genderSelected = document.querySelector('input[name="gender"]:checked');
+                    if (!genderSelected) {
+                        const genderContainer = document.querySelector('input[name="gender"]').closest('.form-group');
+                        const error = document.createElement('div');
+                        error.className = 'invalid-feedback d-block';
+                        error.textContent = 'Please select a gender.';
+                        genderContainer.appendChild(error);
+                        isValid = false;
+                    }
+
+                    // 6. Check file input
+                    const photoInput = document.getElementById('photo');
+                    if (!photoInput.files || photoInput.files.length === 0) {
+                        showError(photoInput, 'Student photo is required.');
+                    }
+
+                    // 7. Check password match
+                    const password = document.getElementById('password').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    if (password && confirmPassword && password !== confirmPassword) {
+                        showError(document.getElementById('confirmPassword'), 'Passwords do not match.');
+                    }
+
+                    if (!isValid) {
+                        e.preventDefault();
+                    }
+                });
             });
         </script>
     </body>
