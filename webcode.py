@@ -143,6 +143,7 @@ def add_student():
         dept_name = request.form['select']
         semester = request.form['select1']
         division = request.form['select3']
+        gender = request.form['gender']
         guardian = request.form['guardian']
         guardian_phone = request.form['phone']
 
@@ -198,10 +199,10 @@ def add_student():
             # Insert with department_id instead of department
             cursor.execute(
                 """INSERT INTO student (stid, lid, name, regno, address, phone, email, 
-                dob, semester, division, photo, gname, gnumber, department_id) VALUES 
-                (null, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                dob, semester, division, photo, gname, gnumber, gender, department_id) VALUES 
+                (null, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 (lid, fname, regno, address, phone, email, dob, 
-                 semester, division, unique_filename, guardian, guardian_phone, dept_id)
+                 semester, division, unique_filename, guardian, guardian_phone, gender, dept_id)
             )
         db.commit()
         flash("Successfully registered", "success")
@@ -475,6 +476,7 @@ def staffreg():
         email = request.form['text5']
         qualification = request.form['text6']
         dept_name = request.form['select']  # This is department_name
+        gender = request.form['gender']
         
         img = request.files['files']
         filename = secure_filename(img.filename)
@@ -509,9 +511,9 @@ def staffreg():
             
             cursor.execute(
                 """INSERT INTO teacher (tid, lid, name, teacher_code, address, phone, 
-                email, qualification, photo, department_id) VALUES 
-                (null, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", 
-                (lid, fname, code, address, phone, email, qualification, unique_filename, dept_id)
+                email, qualification, photo, gender, department_id) VALUES 
+                (null, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", 
+                (lid, fname, code, address, phone, email, qualification, unique_filename, gender, dept_id)
             )
         db.commit()
         flash("Successfully added", "success")
@@ -542,6 +544,8 @@ def view_staff_details():
     else:
         flash("Staff member not found.", "danger")
         return redirect(url_for('view_staff'))
+    
+@app.route('/edit_staff', methods=['GET'])
 @login_required
 def edit_staff():
     db = get_db()
@@ -572,6 +576,7 @@ def update_staff():
         email = request.form['text5']
         qualification = request.form['text6']
         dept_name = request.form['select']  # This is department_name
+        gender = request.form['gender']
         lid = request.form['lid']
         
         img = request.files.get('files')
@@ -598,15 +603,15 @@ def update_staff():
                 
                 cursor.execute(
                     """UPDATE teacher SET name=%s, teacher_code=%s, address=%s, 
-                    phone=%s, email=%s, qualification=%s, department_id=%s, photo=%s 
+                    phone=%s, email=%s, qualification=%s, department_id=%s, photo=%s, gender=%s 
                     WHERE lid=%s""", 
-                    (fname, code, address, phone, email, qualification, dept_id, unique_filename, lid)
+                    (fname, code, address, phone, email, qualification, dept_id, unique_filename, gender, lid)
                 )
             else:
                 cursor.execute(
                     """UPDATE teacher SET name=%s, teacher_code=%s, address=%s, 
-                    phone=%s, email=%s, qualification=%s, department_id=%s WHERE lid=%s""", 
-                    (fname, code, address, phone, email, qualification, dept_id, lid)
+                    phone=%s, email=%s, qualification=%s, department_id=%s, gender=%s WHERE lid=%s""", 
+                    (fname, code, address, phone, email, qualification, dept_id, gender, lid)
                 )
         db.commit()
         flash("Successfully updated", "success")
@@ -767,6 +772,7 @@ def update_student():
         dept_name = request.form['select']
         semester = request.form['select1']
         division = request.form['select3']
+        gender = request.form['gender']
         guardian = request.form['guardian']
         guardian_phone = request.form['phone']
         lid = request.form['lid']
@@ -796,19 +802,19 @@ def update_student():
                 cursor.execute(
                     """UPDATE student SET name=%s, regno=%s, address=%s, 
                     phone=%s, email=%s, dob=%s, department_id=%s, semester=%s, 
-                    division=%s, photo=%s, gname=%s, gnumber=%s
+                    division=%s, photo=%s, gname=%s, gnumber=%s, gender=%s
                     WHERE lid=%s""", 
                     (fname, regno, address, phone, email, dob, dept_id, semester, 
-                     division, unique_filename, guardian, guardian_phone, lid)
+                     division, unique_filename, guardian, guardian_phone, gender, lid)
                 )
             else:
                 cursor.execute(
                     """UPDATE student SET name=%s, regno=%s, address=%s, 
                     phone=%s, email=%s, dob=%s, department_id=%s, semester=%s, 
-                    division=%s, gname=%s, gnumber=%s
+                    division=%s, gname=%s, gnumber=%s, gender=%s
                     WHERE lid=%s""", 
                     (fname, regno, address, phone, email, dob, dept_id, semester, 
-                     division, guardian, guardian_phone, lid)
+                     division, guardian, guardian_phone, gender, lid)
                 )
         db.commit()
         flash("Successfully updated", "success")

@@ -75,6 +75,7 @@
                 <th>Email</th>
                 <th>Mobile No</th>
                 <th>Department</th>
+                <th>Gender</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -89,6 +90,7 @@
                 <td>{{ i['email'] }}</td>
                 <td>{{ i['phone'] }}</td>
                 <td>{{ i['department'] }}</td>
+                <td>{{ i['gender'] }}</td>
                 <td>
                   <a href="/view_student_details?lid={{ i['lid'] }}" class="btn btn-sm btn-info me-1"><i class="fas fa-eye"></i></a>
                   <a href="/edit_student?lid={{ i['lid'] }}" class="btn btn-sm btn-warning me-1"><i class="fas fa-edit"></i></a>
