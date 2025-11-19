@@ -21,7 +21,7 @@
     <!-- Registration Form Card -->
     <div class="card shadow-sm">
       <div class="card-body">
-        <form method="post" action="/update_student" enctype="multipart/form-data">
+        <form method="post" action="/update_student" enctype="multipart/form-data" class="student-edit-form" novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="lid" value="{{ i['lid'] }}">
           
@@ -126,4 +126,104 @@
     </div>
 
   </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('.student-edit-form');
+
+    form.addEventListener('submit', function (e) {
+        let isValid = true;
+
+        // Clear previous errors
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+        // Helper function to show error
+        function showError(input, message) {
+            isValid = false;
+            input.classList.add('is-invalid');
+            const error = document.createElement('div');
+            error.className = 'invalid-feedback';
+            error.textContent = message;
+            // Insert error after the input element
+            input.parentNode.insertBefore(error, input.nextSibling);
+        }
+
+        // 1. Check required text inputs and textareas
+        const requiredFields = [
+            { id: 'name', name: 'Name' },
+            { id: 'regno', name: 'Registration No' },
+            { id: 'address', name: 'Address' },
+            { id: 'phone', name: 'Phone' },
+            { id: 'email', name: 'Email' },
+            { id: 'dob', name: 'Date of Birth' },
+            { id: 'division', name: 'Division' },
+            { id: 'guardian', name: 'Guardian Name' },
+            { id: 'guardian_phone', name: 'Guardian Phone' }
+        ];
+
+        requiredFields.forEach(item => {
+            const input = document.getElementById(item.id);
+            if (input && !input.value.trim()) {
+                showError(input, `${item.name} is required.`);
+            }
+        });
+
+        // 2. Check email format
+        const emailInput = document.getElementById('email');
+        if (emailInput && emailInput.value.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailInput.value)) {
+                showError(emailInput, 'Please enter a valid email address.');
+            }
+        }
+
+        // 3. Check phone number format (simple check for digits)
+        const phoneInput = document.getElementById('phone');
+        const guardianPhoneInput = document.getElementById('guardian_phone');
+        if (phoneInput && phoneInput.value.trim()) {
+            const phoneRegex = /^\d{10,15}$/;
+            if (!phoneRegex.test(phoneInput.value)) {
+                showError(phoneInput, 'Please enter a valid phone number (10-15 digits).');
+            }
+        }
+        if (guardianPhoneInput && guardianPhoneInput.value.trim()) {
+            const phoneRegex = /^\d{10,15}$/;
+            if (!phoneRegex.test(guardianPhoneInput.value)) {
+                showError(guardianPhoneInput, 'Please enter a valid phone number (10-15 digits).');
+            }
+        }
+
+        // 4. Check select fields
+        const selectFields = [
+            { id: 'department', name: 'Department' },
+            { id: 'semester', name: 'Semester' }
+        ];
+
+        selectFields.forEach(item => {
+            const select = document.getElementById(item.id);
+            if (select && (select.value.startsWith('--') || !select.value)) {
+                showError(select, `Please select a ${item.name}.`);
+            }
+        });
+
+        // 5. Check gender radio buttons
+        const genderSelected = document.querySelector('input[name="gender"]:checked');
+        if (!genderSelected) {
+            const genderContainer = document.querySelector('input[name="gender"]').closest('.mb-3');
+            const error = document.createElement('div');
+            error.className = 'invalid-feedback d-block';
+            error.textContent = 'Please select a gender.';
+            genderContainer.appendChild(error);
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
 {% endblock %}

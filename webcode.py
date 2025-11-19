@@ -143,20 +143,38 @@ def add_student():
         dept_name = request.form['select']
         semester = request.form['select1']
         division = request.form['select3']
-        gender = request.form['gender']
+        gender = request.form.get('gender')
         guardian = request.form['guardian']
         guardian_phone = request.form['phone']
+        uname = request.form['uname']
+        password = request.form['password']
+        cnfpassword = request.form['cnfpassword']
+
+        # Validate required fields
+        required_fields = {
+            'Full Name': fname, 'Register Number': regno, 'Address': address,
+            'Phone': phone, 'Email': email, 'Date of Birth': dob,
+            'Department': dept_name, 'Semester': semester, 'Division': division,
+            'Gender': gender, 'Guardian Name': guardian, 'Guardian Phone': guardian_phone,
+            'Username': uname, 'Password': password
+        }
+
+        for field, value in required_fields.items():
+            if not value or (isinstance(value, str) and not value.strip()):
+                flash(f"{field} is required.", "danger")
+                return redirect(url_for('student_signup'))
+        
+        if dept_name == "--Department--" or semester == "--Semester--" or division == "--Division--":
+            flash("Please select valid department, semester, and division.", "danger")
+            return redirect(url_for('student_signup'))
 
         # Handle file upload
-        if 'files' not in request.files:
-            flash("No file uploaded", "danger")
+        if 'files' not in request.files or request.files['files'].filename == '':
+            flash("Photo is required.", "danger")
             return redirect(url_for('student_signup'))
         
         img = request.files['files']
-        if img.filename == '':
-            flash("No file selected", "danger")
-            return redirect(url_for('student_signup'))
-
+        
         # Generate unique filename
         filename = secure_filename(img.filename)
         unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
@@ -165,10 +183,6 @@ def add_student():
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(upload_path), exist_ok=True)
         img.save(upload_path)
-
-        uname = request.form['uname']
-        password = request.form['password']
-        cnfpassword = request.form['cnfpassword']
         
         if password != cnfpassword:
             flash("Password mismatch", "danger")
@@ -777,6 +791,7 @@ def edit_student():
 @login_required
 def update_student():
     db = get_db()
+    lid = request.form.get('lid')
     try:
         fname = request.form['text1']
         regno = request.form['text2']
@@ -787,11 +802,27 @@ def update_student():
         dept_name = request.form['select']
         semester = request.form['select1']
         division = request.form['select3']
-        gender = request.form['gender']
+        gender = request.form.get('gender')
         guardian = request.form['guardian']
         guardian_phone = request.form['phone']
-        lid = request.form['lid']
+
+        # Validate required fields
+        required_fields = {
+            'Full Name': fname, 'Register Number': regno, 'Address': address,
+            'Phone': phone, 'Email': email, 'Date of Birth': dob,
+            'Department': dept_name, 'Semester': semester, 'Division': division,
+            'Gender': gender, 'Guardian Name': guardian, 'Guardian Phone': guardian_phone
+        }
+
+        for field, value in required_fields.items():
+            if not value or (isinstance(value, str) and not value.strip()):
+                flash(f"{field} is required.", "danger")
+                return redirect(url_for('edit_student', lid=lid))
         
+        if dept_name == "--Department--" or semester == "--Semester--" or division == "--Division--":
+            flash("Please select valid department, semester, and division.", "danger")
+            return redirect(url_for('edit_student', lid=lid))
+
         img = request.files.get('files')
         
         with db.cursor() as cursor:
@@ -839,7 +870,7 @@ def update_student():
         db.rollback()
         print(f"Error updating student: {str(e)}")
         flash(f"Error occurred: {str(e)}", "danger")
-        return redirect(url_for('edit_student', lid=request.form.get('lid')))
+        return redirect(url_for('edit_student', lid=lid))
 
 @app.route('/delete_student', methods=['POST', 'GET'])
 @login_required
