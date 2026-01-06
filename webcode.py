@@ -23,11 +23,11 @@ pool = PooledDB(
     maxusage=None,  # Max times a connection can be reused (None = unlimited)
     setsession=[],  # SQL commands to execute on new connections
     ping=1,  # Ping MySQL on checkout (0=never, 1=default, 2=when used, 4=always, 7=all)
-    host='localhost',
+    host=os.environ.get('DB_HOST', 'localhost'),
     port=3306,
-    user='root',
-    password='',
-    database='attendance_face',
+    user=os.environ.get('DB_USER', 'root'),
+    password=os.environ.get('DB_PASSWORD', ''),
+    database=os.environ.get('DB_NAME', 'attendance_face'),
     charset='utf8mb4',
     cursorclass=pymysql.cursors.DictCursor,
     autocommit=False  # Manual transaction control
@@ -1212,4 +1212,4 @@ def view_timetables():
     return render_template("admin/timetableview.html", res=res, dept_list=dept_list, course_list=course_list, dept=dept_name, sem=sem, course=course)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)

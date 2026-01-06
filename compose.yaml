@@ -1,0 +1,30 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=ezquela-db
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=attendance_face
+    depends_on:
+      - database
+    volumes:
+      - .:/app
+
+  database:
+    image: mysql:8.0
+    container_name: ezquela-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: attendance_face
+    ports:
+      - "3307:3306" # Using 3307 to avoid conflict with your other projects (3306/3308/3309)
+    volumes:
+      - db_data:/var/lib/mysql
+      # AUTOMATIC IMPORT: This loads your backup.sql when the container is created
+      - ./database/db.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  db_data:
