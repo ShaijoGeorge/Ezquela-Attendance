@@ -68,7 +68,7 @@ def index():
         if role == "admin":
             return redirect('/admin_home')
         elif role == "teacher":
-            return redirect('/teacher_home')
+            return redirect('/staff_home')
         elif role == "student":
             return redirect('/student_home')
     return redirect(url_for('user'))
@@ -104,7 +104,7 @@ def user():
         if role == "admin":
             return redirect('/admin_home')
         elif role == "teacher":
-            return redirect('/teacher_home')
+            return redirect('/staff_home')
         elif role == "student":
             return redirect('/student_home')
         
@@ -1210,6 +1210,77 @@ def view_timetables():
         course_list = cursor.fetchall()
 
     return render_template("admin/timetableview.html", res=res, dept_list=dept_list, course_list=course_list, dept=dept_name, sem=sem, course=course)
+
+# Staff Home Dashboard
+@app.route('/staff_home')
+@login_required
+def staff_home():
+    db = get_db()
+    with db.cursor() as cursor:
+        # Get Teacher's Department
+        cursor.execute("SELECT department_id, name FROM teacher WHERE lid = %s", (session['lid'],))
+        staff_data = cursor.fetchone()
+        
+        if not staff_data:
+            flash("Staff profile not found.", "danger")
+            return redirect(url_for('user'))
+
+        dept_id = staff_data['department_id']
+        session['dept_id'] = dept_id
+
+        # Calculate Attendance Shortage
+        cursor.execute("""
+            SELECT s.name, s.lid, 
+                   COUNT(CASE WHEN a.attendance = 0 THEN 1 END) as absent_days
+            FROM student s
+            LEFT JOIN attendence a ON s.lid = a.studentlid
+            WHERE s.department_id = %s
+            GROUP BY s.lid, s.name 
+            HAVING absent_days >= 2
+        """, (dept_id,))
+        shortage_list = cursor.fetchall()
+
+    # Render teacher dashboard with shortage count    
+    return render_template("staff/staffindex.html", teacher=staff_data, shortage_count=len(shortage_list))
+
+# Staff Profile View
+@app.route('/staff_profile')
+@login_required
+def staff_profile():
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("""
+            SELECT t.*, d.department_name 
+            FROM teacher t 
+            LEFT JOIN department d ON t.department_id = d.department_id 
+            WHERE t.lid = %s
+        """, (session['lid'],))
+        profile = cursor.fetchone()
+    return render_template("staff/staff_profile.html", i=profile)
+
+# Update Staff Profile
+@app.route('/update_staff_profile', methods=['POST'])
+@login_required
+def update_staff_profile():
+    try:
+        db = get_db()
+        name = request.form['text1']
+        address = request.form['text3']
+        phone = request.form['text4']
+        email = request.form['text5']
+        
+        with db.cursor() as cursor:
+            cursor.execute("""
+                UPDATE teacher 
+                SET name=%s, address=%s, phone=%s, email=%s 
+                WHERE lid=%s
+            """, (name, address, phone, email, session['lid']))
+        db.commit()
+        flash("Profile updated successfully", "success")
+        return redirect(url_for('staff_profile'))
+    except Exception as e:
+        flash("Update failed", "danger")
+        return redirect(url_for('staff_profile'))
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
