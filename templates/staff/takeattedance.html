@@ -1,0 +1,51 @@
+{% extends 'staff/base.html' %}
+{% block body %}
+<div class="container mt-5">
+    <div class="card shadow" style="max-width: 600px; margin: auto;">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Start Class Attendance</h5>
+        </div>
+        <div class="card-body">
+            <form action="/take_attendance" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                <div class="mb-3">
+                    <label class="form-label">Subject</label>
+                    <select name="subject" class="form-control" required>
+                        <option value="">-- Select Subject --</option>
+                        {% for sub in subjects %}
+                        <option value="{{ sub.sid }}">{{ sub.subject }} (Sem {{ sub.semester }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Semester</label>
+                        <select name="semester" class="form-control" required>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Hour</label>
+                        <select name="hour" class="form-control" required>
+                            {% for i in range(1, 8) %}
+                            <option value="{{ i }}">{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-success">Open Camera & Start</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

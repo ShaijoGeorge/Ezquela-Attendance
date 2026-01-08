@@ -1,0 +1,61 @@
+{% extends 'staff/base.html' %}
+{% block body %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5>View Class Attendance</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" class="row g-3 mb-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="col-md-5">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" class="form-control" required value="{{ request.form.date }}">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Hour</label>
+                    <select name="hour" class="form-control">
+                        {% for i in range(1, 8) %}
+                        <option value="{{ i }}">Hour {{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+            </form>
+
+            {% if val %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Reg No</th>
+                            <th>Student Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in val %}
+                        <tr>
+                            <td>{{ row.regno }}</td>
+                            <td>{{ row.name }}</td>
+                            <td>
+                                {% if row.attendance == 1 %}
+                                <span class="badge bg-success">Present</span>
+                                {% else %}
+                                <span class="badge bg-danger">Absent</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% elif request.method == 'POST' %}
+            <div class="alert alert-warning">No records found for this date/hour.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

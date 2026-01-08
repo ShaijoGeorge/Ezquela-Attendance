@@ -1,0 +1,83 @@
+{% extends 'staff/base.html' %}
+{% block body %}
+<div class="container mt-4 text-center">
+    <h3>Class In Progress...</h3>
+    <p class="text-muted">Point camera at students to mark attendance automatically.</p>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <video id="video" width="100%" height="auto" autoplay class="border rounded shadow"></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            
+            <div class="mt-3">
+                <button id="captureBtn" class="btn btn-primary btn-lg">
+                    <i class="fas fa-camera"></i> Scan Face
+                </button>
+                <a href="/staff_home" class="btn btn-danger btn-lg">Stop Class</a>
+            </div>
+            
+            <div id="result" class="mt-3 alert alert-secondary" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const resultDiv = document.getElementById('result');
+    const csrfToken = "{{ csrf_token() }}";
+
+    // 1. Start Camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => { 
+            console.error("Camera error:", err); 
+            alert("Could not access camera. Please allow permissions.");
+        });
+
+    // 2. Capture & Send Image
+    captureBtn.addEventListener('click', () => {
+        // Draw video frame to canvas
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        
+        // Convert to Base64
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        // Show loading state
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'alert alert-info';
+        resultDiv.innerText = "Scanning...";
+
+        // Send to Server
+        fetch('/mark_attendance_face', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ image: imageData })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                resultDiv.className = 'alert alert-success';
+                resultDiv.innerText = data.message;
+            } else if (data.status === 'info') {
+                resultDiv.className = 'alert alert-warning';
+                resultDiv.innerText = data.message;
+            } else {
+                resultDiv.className = 'alert alert-danger';
+                resultDiv.innerText = "Not Recognized. Try again.";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            resultDiv.className = 'alert alert-danger';
+            resultDiv.innerText = "Server Error";
+        });
+    });
+</script>
+{% endblock %}

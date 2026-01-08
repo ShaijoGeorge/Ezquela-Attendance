@@ -1281,6 +1281,125 @@ def update_staff_profile():
     except Exception as e:
         flash("Update failed", "danger")
         return redirect(url_for('staff_profile'))
+    
+# ATTENDANCE MANAGEMENT MODULE
+@app.route('/staff_view_attendance', methods=['POST', 'GET'])
+@login_required
+def staff_view_attendance():
+    db = get_db()
+    data = []
+    
+    if request.method == 'POST':
+        date = request.form['date']
+        hour = request.form['hour']
+        
+        with db.cursor() as cursor:
+            # Get current staff's department
+            cursor.execute("SELECT department_id FROM teacher WHERE lid=%s", (session['lid'],))
+            staff_dept = cursor.fetchone()
+            
+            if staff_dept:
+                # Fetch attendance for that date, hour, and department
+                cursor.execute("""
+                    SELECT s.name, s.regno, a.attendance, a.status 
+                    FROM attendence a
+                    JOIN student s ON a.studentlid = s.lid
+                    WHERE a.date = %s AND a.hour = %s AND a.department_id = %s
+                """, (date, hour, staff_dept['department_id']))
+                data = cursor.fetchall()
+                
+    return render_template("staff/attendance.html", val=data)
+
+@app.route('/take_attendance', methods=['POST', 'GET'])
+@login_required
+def take_attendance():
+    db = get_db()
+    with db.cursor() as cursor:
+        # Get Department ID for the logged-in staff
+        cursor.execute("SELECT department_id FROM teacher WHERE lid=%s", (session['lid'],))
+        staff_res = cursor.fetchone()
+        
+        if not staff_res:
+            flash("Error: Staff department not found", "danger")
+            return redirect(url_for('staff_home'))
+
+        dept_id = staff_res['department_id']
+
+        # Get Subjects for this department
+        cursor.execute("SELECT * FROM subject WHERE department_id = %s", (dept_id,))
+        subjects = cursor.fetchall()
+
+    if request.method == 'POST':
+        # Store selection in session to use it during camera capture
+        session['att_sub'] = request.form['subject']
+        session['att_hour'] = request.form['hour']
+        session['att_sem'] = request.form['semester']
+        session['att_div'] = request.form.get('division', 'A') # Default to A if missing
+        
+        return render_template("staff/stopclass.html") # Redirects to Camera Page
+
+    return render_template("staff/takeattedance.html", subjects=subjects)
+
+@app.route('/mark_attendance_face', methods=['POST'])
+@login_required
+def mark_attendance_face():
+    # This route is called by JavaScript in stopclass.html
+    try:
+        import base64
+        
+        # 1. Get the image from the JSON request
+        data = request.json
+        image_data = data['image'].split(',')[1] # Remove "data:image/jpeg;base64," header
+        
+        # 2. Save temporary file
+        filename = f"temp_{session['lid']}.jpg"
+        filepath = os.path.join("static", "test", filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        with open(filepath, "wb") as fh:
+            fh.write(base64.b64decode(image_data))
+            
+        # 3. Predict Face
+        from facemaster import predict_face
+        student_lid, confidence = predict_face(filepath)
+        
+        response = {"status": "failed", "message": "Face not recognized"}
+        
+        if student_lid:
+            db = get_db()
+            with db.cursor() as cursor:
+                # Get Staff Department again
+                cursor.execute("SELECT department_id FROM teacher WHERE lid=%s", (session['lid'],))
+                dept_id = cursor.fetchone()['department_id']
+                
+                # Check if already marked for this hour
+                cursor.execute("""
+                    SELECT aid FROM attendence 
+                    WHERE studentlid=%s AND date=CURDATE() AND hour=%s
+                """, (student_lid, session['att_hour']))
+                
+                if not cursor.fetchone():
+                    # Insert Present Record
+                    cursor.execute("""
+                        INSERT INTO attendence 
+                        (studentlid, date, attendance, hour, sem, division, department_id, subid, status)
+                        VALUES (%s, CURDATE(), 1, %s, %s, %s, %s, %s, 'present')
+                    """, (student_lid, session['att_hour'], session['att_sem'], 
+                          session['att_div'], dept_id, session['att_sub']))
+                    db.commit()
+                    response = {
+                        "status": "success", 
+                        "message": f"Marked Present: Student ID {student_lid}",
+                        "student_id": student_lid
+                    }
+                else:
+                    response = {"status": "info", "message": "Already marked present"}
+                    
+        return jsonify(response)
+        
+    except Exception as e:
+        print(e)
+        return jsonify({"status": "error", "message": str(e)})
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
