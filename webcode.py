@@ -1217,31 +1217,35 @@ def view_timetables():
 def staff_home():
     db = get_db()
     with db.cursor() as cursor:
-        # Get Teacher's Department
-        cursor.execute("SELECT department_id, name FROM teacher WHERE lid = %s", (session['lid'],))
-        staff_data = cursor.fetchone()
-        
-        if not staff_data:
+        cursor.execute("""
+            SELECT t.*, d.department_name
+            FROM teacher t
+            LEFT JOIN department d ON t.department_id = d.department_id
+            WHERE t.lid = %s
+        """, (session['lid'],))
+        teacher = cursor.fetchone()
+
+        if not teacher:
             flash("Staff profile not found.", "danger")
             return redirect(url_for('user'))
 
-        dept_id = staff_data['department_id']
-        session['dept_id'] = dept_id
+        # Keep only what is needed in session (already used elsewhere)
+        session['dept_id'] = teacher['department_id']
 
-        # Calculate Attendance Shortage
+        # Attendance shortage
         cursor.execute("""
-            SELECT s.name, s.lid, 
-                   COUNT(CASE WHEN a.attendance = 0 THEN 1 END) as absent_days
+            SELECT s.name, s.lid,
+                   COUNT(CASE WHEN a.attendance = 0 THEN 1 END) AS absent_days
             FROM student s
             LEFT JOIN attendence a ON s.lid = a.studentlid
             WHERE s.department_id = %s
-            GROUP BY s.lid, s.name 
+            GROUP BY s.lid, s.name
             HAVING absent_days >= 2
-        """, (dept_id,))
+        """, (teacher['department_id'],))
         shortage_list = cursor.fetchall()
 
-    # Render teacher dashboard with shortage count    
-    return render_template("staff/staffindex.html", teacher=staff_data, shortage_count=len(shortage_list))
+    return render_template("staff/staffindex.html", teacher=teacher, shortage_count=len(shortage_list)
+)
 
 # Staff Profile View
 @app.route('/staff_profile')
