@@ -1260,7 +1260,9 @@ def staff_profile():
             WHERE t.lid = %s
         """, (session['lid'],))
         profile = cursor.fetchone()
-    return render_template("staff/staff_profile.html", i=profile)
+    
+    # Pass 'teacher' for base.html AND 'i' for the profile form
+    return render_template("staff/staff_profile.html", i=profile, teacher=profile)
 
 # Update Staff Profile
 @app.route('/update_staff_profile', methods=['POST'])
@@ -1293,56 +1295,57 @@ def staff_view_attendance():
     db = get_db()
     data = []
     
+    # Fetch full teacher info for the sidebar
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM teacher WHERE lid=%s", (session['lid'],))
+        teacher = cursor.fetchone()
+    
     if request.method == 'POST':
         date = request.form['date']
         hour = request.form['hour']
         
         with db.cursor() as cursor:
-            # Get current staff's department
-            cursor.execute("SELECT department_id FROM teacher WHERE lid=%s", (session['lid'],))
-            staff_dept = cursor.fetchone()
-            
-            if staff_dept:
-                # Fetch attendance for that date, hour, and department
+            # Use the fetched teacher's department_id
+            if teacher:
                 cursor.execute("""
                     SELECT s.name, s.regno, a.attendance, a.status 
                     FROM attendence a
                     JOIN student s ON a.studentlid = s.lid
                     WHERE a.date = %s AND a.hour = %s AND a.department_id = %s
-                """, (date, hour, staff_dept['department_id']))
+                """, (date, hour, teacher['department_id']))
                 data = cursor.fetchall()
                 
-    return render_template("staff/attendance.html", val=data)
+    return render_template("staff/attendance.html", val=data, teacher=teacher)
 
 @app.route('/take_attendance', methods=['POST', 'GET'])
 @login_required
 def take_attendance():
     db = get_db()
     with db.cursor() as cursor:
-        # Get Department ID for the logged-in staff
-        cursor.execute("SELECT department_id FROM teacher WHERE lid=%s", (session['lid'],))
-        staff_res = cursor.fetchone()
+        # Fetch full teacher info (was only department_id before)
+        cursor.execute("SELECT * FROM teacher WHERE lid=%s", (session['lid'],))
+        teacher = cursor.fetchone()
         
-        if not staff_res:
+        if not teacher:
             flash("Error: Staff department not found", "danger")
             return redirect(url_for('staff_home'))
 
-        dept_id = staff_res['department_id']
+        dept_id = teacher['department_id']
 
-        # Get Subjects for this department
+        # Get Subjects
         cursor.execute("SELECT * FROM subject WHERE department_id = %s", (dept_id,))
         subjects = cursor.fetchall()
 
     if request.method == 'POST':
-        # Store selection in session to use it during camera capture
         session['att_sub'] = request.form['subject']
         session['att_hour'] = request.form['hour']
         session['att_sem'] = request.form['semester']
-        session['att_div'] = request.form.get('division', 'A') # Default to A if missing
+        session['att_div'] = request.form.get('division', 'A')
         
-        return render_template("staff/stopclass.html") # Redirects to Camera Page
+        # Pass teacher here too
+        return render_template("staff/stopclass.html", teacher=teacher) 
 
-    return render_template("staff/takeattedance.html", subjects=subjects)
+    return render_template("staff/takeattedance.html", subjects=subjects, teacher=teacher)
 
 @app.route('/mark_attendance_face', methods=['POST'])
 @login_required
