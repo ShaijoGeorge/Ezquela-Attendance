@@ -208,7 +208,7 @@ def add_student():
                 "INSERT INTO login VALUES (null, %s, %s, 'student')", 
                 (uname, password)
             )
-            lid = db.insert_id()
+            lid = cursor.lastrowid
             
             # Insert with department_id instead of department
             cursor.execute(
@@ -603,7 +603,7 @@ def staffreg():
             dept_id = dept_result['department_id']
             
             cursor.execute("INSERT INTO login VALUES (null, %s, %s, 'teacher')", (uname, password))
-            lid = db.insert_id()
+            lid = cursor.lastrowid
             
             cursor.execute(
                 """INSERT INTO teacher (tid, lid, name, teacher_code, address, phone, 
