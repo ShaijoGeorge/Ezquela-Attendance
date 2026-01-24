@@ -255,9 +255,12 @@ def manage_departments():
 def admin_add_student():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept = cursor.fetchall()
-    return render_template("admin/add_student.html", dept=dept)
+
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+    return render_template("admin/add_student.html", dept=dept, courses=courses)
 
 @app.route('/admin_save_student', methods=['POST'])
 @login_required

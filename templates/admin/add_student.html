@@ -12,15 +12,25 @@
                 <h6 class="text-primary mb-3">Academic Details</h6>
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label class="form-label">Department</label>
-                        <select name="select" class="form-select" required>
-                            <option value="">-- Select Department --</option>
-                            {% for d in dept %}
-                            <option value="{{ d.department_name }}">{{ d.department_name }}</option>
+                        <label class="form-label">Course</label>
+                        <select id="courseSelect" class="form-select" onchange="filterDepartments()">
+                            <option value="">-- Select Course --</option>
+                            {% for c in courses %} <option value="{{ c.course_id }}">{{ c.course_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-4">
+                        <label class="form-label">Department</label>
+                        <select name="select" id="deptSelect" class="form-select" required>
+                            <option value="">-- Select Department --</option>
+                            {% for d in dept %}
+                                <option value="{{ d.department_name }}" data-course="{{ d.course_id }}">
+                                    {{ d.department_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label">Semester</label>
                         <select name="select1" class="form-select" required>
                             <option value="">-- Select --</option>
@@ -30,7 +40,7 @@
                             <option value="7">7</option><option value="8">8</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <label class="form-label">Division</label>
                         <select name="select3" class="form-select" required>
                             <option value="A">A</option>
@@ -120,4 +130,24 @@
         </div>
     </div>
 </div>
+
+<script>
+function filterDepartments() {
+    var courseId = document.getElementById("courseSelect").value;
+    var deptSelect = document.getElementById("deptSelect");
+    var options = deptSelect.getElementsByTagName("option");
+
+    for (var i = 0; i < options.length; i++) {
+        var option = options[i];
+        var deptCourse = option.getAttribute("data-course");
+
+        if (courseId === "" || deptCourse === courseId || option.value === "") {
+            option.style.display = "block"; // Show match
+        } else {
+            option.style.display = "none";  // Hide mismatch
+        }
+    }
+    deptSelect.value = ""; // Reset selection
+}
+</script>
 {% endblock %}
