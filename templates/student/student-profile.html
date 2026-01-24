@@ -1,73 +1,59 @@
 {% extends 'student/base.html' %}
 {% block body %}
-<div class="container">
+<div class="container mt-4">
     <div class="card shadow">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">My Profile</h5>
-            <small>Keep your contact info up to date</small>
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-primary">My Profile</h5>
+            <a href="/student_edit_profile" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-pen me-2"></i>Edit Details
+            </a>
         </div>
         <div class="card-body">
-            
-            <form action="/update_student_profile" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-
-                <div class="row">
-                    <div class="col-md-4 text-center border-end">
-                        <img src="/static/photos/studentphoto/{{ student.photo }}" 
-                             class="img-fluid rounded-circle mb-3 shadow-sm" 
-                             style="width: 180px; height: 180px; object-fit: cover;">
+            <div class="row">
+                <div class="col-md-4 text-center border-end">
+                    <img src="/static/photos/studentphoto/{{ student.photo }}" 
+                         class="img-fluid rounded-circle mb-3 shadow-sm" 
+                         style="width: 160px; height: 160px; object-fit: cover; border: 4px solid #f8f9fa;">
+                    
+                    <h3>{{ student.name }}</h3>
+                    <span class="badge bg-dark mb-3">{{ student.regno }}</span>
+                    
+                    <div class="text-start mt-4 px-4">
+                        <label class="small text-muted fw-bold text-uppercase">Department</label>
+                        <p class="mb-3">{{ student.department_name }}</p>
                         
-                        <h4 class="text-primary">{{ student.name }}</h4>
-                        <p class="text-muted fw-bold">{{ student.regno }}</p>
-                        
-                        <div class="text-start mt-4 px-3">
-                            <label class="small text-muted">Department</label>
-                            <p class="fw-bold">{{ student.department_name }}</p>
-                            
-                            <label class="small text-muted">Course & Semester</label>
-                            <p>{{ student.course_name }} - S{{ student.semester }}</p>
-
-                            <label class="small text-muted">Guardian</label>
-                            <p>{{ student.gname }} ({{ student.gnumber }})</p>
-                        </div>
-                    </div>
-
-                    <div class="col-md-8 px-4">
-                        <h5 class="mb-3 text-secondary">Edit Contact Details</h5>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Phone Number</label>
-                                <input type="number" name="phone" class="form-control" value="{{ student.phone }}" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Email Address</label>
-                                <input type="email" name="email" class="form-control" value="{{ student.email }}" required>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Address</label>
-                            <textarea name="address" class="form-control" rows="3" required>{{ student.address }}</textarea>
-                        </div>
-
-                        <hr>
-
-                        <h5 class="mb-3 text-secondary">Security</h5>
-                        <div class="mb-4">
-                            <label class="form-label">Change Password <span class="text-muted small">(Leave blank to keep current)</span></label>
-                            <input type="password" name="password" class="form-control" placeholder="New Password">
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-save me-2"></i> Save Changes
-                            </button>
-                        </div>
+                        <label class="small text-muted fw-bold text-uppercase">Course</label>
+                        <p class="mb-0">{{ student.course_name }} (S{{ student.semester }})</p>
                     </div>
                 </div>
-            </form>
-            
+
+                <div class="col-md-8 px-4">
+                    <h5 class="text-muted border-bottom pb-2 mb-3">Personal Details</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Phone</div>
+                        <div class="col-sm-8 fw-bold">{{ student.phone }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Email</div>
+                        <div class="col-sm-8 fw-bold">{{ student.email }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Address</div>
+                        <div class="col-sm-8 fw-bold">{{ student.address }}</div>
+                    </div>
+                    
+                    <h5 class="text-muted border-bottom pb-2 mb-3 mt-5">Guardian Info</h5>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Guardian Name</div>
+                        <div class="col-sm-8 fw-bold">{{ student.gname }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Guardian Phone</div>
+                        <div class="col-sm-8 fw-bold">{{ student.gnumber }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

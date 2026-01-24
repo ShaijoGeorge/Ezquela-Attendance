@@ -1,0 +1,96 @@
+{% extends 'student/base.html' %}
+{% block body %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Edit Contact Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <form action="/update_student_profile" method="post" id="editForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                        <div class="alert alert-light border mb-4">
+                            <div class="d-flex align-items-center">
+                                <img src="/static/photos/studentphoto/{{ student.photo }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                <div>
+                                    <h6 class="mb-0">{{ student.name }}</h6>
+                                    <small class="text-muted">{{ student.regno }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="text-primary mb-3">Contact Information</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="number" name="phone" class="form-control track-change" 
+                                       value="{{ student.phone }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" name="email" class="form-control track-change" 
+                                       value="{{ student.email }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Residential Address</label>
+                            <textarea name="address" class="form-control track-change" rows="3" required>{{ student.address }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between pt-3 border-top">
+                            <a href="/student_profile" class="btn btn-secondary px-4">Cancel</a>
+                            
+                            <button type="submit" id="saveBtn" class="btn btn-primary px-4" disabled>
+                                <i class="fas fa-save me-2"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("editForm");
+        const saveBtn = document.getElementById("saveBtn");
+        const inputs = document.querySelectorAll(".track-change");
+        
+        // Store initial values
+        let initialValues = {};
+        inputs.forEach(input => {
+            initialValues[input.name] = input.value.trim();
+        });
+
+        // To check if anything changed
+        function checkForChanges() {
+            let hasChanged = false;
+            inputs.forEach(input => {
+                if (input.value.trim() !== initialValues[input.name]) {
+                    hasChanged = true;
+                }
+            });
+            
+            if (hasChanged) {
+                saveBtn.removeAttribute("disabled");
+                saveBtn.innerHTML = '<i class="fas fa-save me-2"></i> Save Changes';
+            } else {
+                saveBtn.setAttribute("disabled", "true");
+                saveBtn.innerHTML = '<i class="fas fa-check me-2"></i> No Changes';
+            }
+        }
+
+        // Listen for typing in any field
+        inputs.forEach(input => {
+            input.addEventListener("input", checkForChanges);
+        });
+    });
+</script>
+{% endblock %}

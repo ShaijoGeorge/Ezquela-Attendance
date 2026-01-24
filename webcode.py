@@ -1433,32 +1433,43 @@ def student_profile():
     student = get_student_info()
     return render_template("student/student-profile.html", student=student, i=student)
 
+@app.route('/student_edit_profile')
+@login_required
+def student_edit_profile():
+    student = get_student_info()
+    return render_template("student/student-edit.html", student=student)
+
 @app.route('/update_student_profile', methods=['POST'])
 @login_required
 def update_student_profile():
     try:
+        # Get New Data from Form
+        new_phone = request.form['phone'].strip()
+        new_email = request.form['email'].strip()
+        new_address = request.form['address'].strip()
+        
+        # Get Current Data from DB
+        current_data = get_student_info() # Uses your existing helper function
+        
+        # Compare (Validation Logic)
+        # Note: Convert DB phone to string to ensure safe comparison
+        if (new_phone == str(current_data['phone']) and 
+            new_email == current_data['email'] and 
+            new_address == current_data['address']):
+            
+            flash("No changes detected. Profile was not updated.", "info")
+            # Redirect back to edit page so they can try again or cancel
+            return redirect(url_for('student_edit_profile'))
+
+        # If changes exist, Proceed with Update
         db = get_db()
-        lid = session['lid']
-        
-        # Get editable fields
-        phone = request.form['phone']
-        email = request.form['email']
-        address = request.form['address']
-        
-        password = request.form.get('password')
-        
         with db.cursor() as cursor:
-            # Update Student Table
             cursor.execute("""
                 UPDATE student 
                 SET phone=%s, email=%s, address=%s 
                 WHERE lid=%s
-            """, (phone, email, address, lid))
+            """, (new_phone, new_email, new_address, session['lid']))
             
-            # Update Password
-            if password and password.strip():
-                cursor.execute("UPDATE login SET password=%s WHERE id=%s", (password, lid))
-                
         db.commit()
         flash("Profile updated successfully.", "success")
         return redirect(url_for('student_profile'))
@@ -1466,8 +1477,8 @@ def update_student_profile():
     except Exception as e:
         db.rollback()
         print(f"Error updating profile: {e}")
-        flash("Something went wrong. Try again.", "danger")
-        return redirect(url_for('student_profile'))
+        flash("An error occurred. Please try again.", "danger")
+        return redirect(url_for('student_edit_profile'))
 
 @app.route('/dataset_capture', methods=['POST', 'GET'])
 @login_required
