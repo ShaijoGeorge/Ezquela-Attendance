@@ -1433,6 +1433,42 @@ def student_profile():
     student = get_student_info()
     return render_template("student/student-profile.html", student=student, i=student)
 
+@app.route('/update_student_profile', methods=['POST'])
+@login_required
+def update_student_profile():
+    try:
+        db = get_db()
+        lid = session['lid']
+        
+        # Get editable fields
+        phone = request.form['phone']
+        email = request.form['email']
+        address = request.form['address']
+        
+        password = request.form.get('password')
+        
+        with db.cursor() as cursor:
+            # Update Student Table
+            cursor.execute("""
+                UPDATE student 
+                SET phone=%s, email=%s, address=%s 
+                WHERE lid=%s
+            """, (phone, email, address, lid))
+            
+            # Update Password
+            if password and password.strip():
+                cursor.execute("UPDATE login SET password=%s WHERE id=%s", (password, lid))
+                
+        db.commit()
+        flash("Profile updated successfully.", "success")
+        return redirect(url_for('student_profile'))
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating profile: {e}")
+        flash("Something went wrong. Try again.", "danger")
+        return redirect(url_for('student_profile'))
+
 @app.route('/dataset_capture', methods=['POST', 'GET'])
 @login_required
 def dataset_capture():
