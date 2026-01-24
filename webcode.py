@@ -1558,7 +1558,7 @@ def staff_approve_leave(leave_id, action):
     
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("UPDATE `leave` SET status=%s WHERE leave_id=%s", (status, leave_id))
+        cursor.execute("UPDATE `leave` SET status=%s WHERE lvid=%s", (status, leave_id))
     db.commit()
     
     flash(f"Leave request {status}", "success")
