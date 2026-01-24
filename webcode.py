@@ -250,6 +250,81 @@ def manage_departments():
         courses = cursor.fetchall()
     return render_template('admin/departments.html', departments=departments, courses=courses)
 
+@app.route('/admin_add_student', methods=['GET'])
+@login_required
+def admin_add_student():
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT department_name FROM department")
+        dept = cursor.fetchall()
+    return render_template("admin/add_student.html", dept=dept)
+
+@app.route('/admin_save_student', methods=['POST'])
+@login_required
+def admin_save_student():
+    db = get_db()
+    try:
+        # Get Form Data
+        fname = request.form['text1']
+        regno = request.form['text2']
+        address = request.form['text3']
+        phone = request.form['text4']
+        email = request.form['text5']
+        dob = request.form['text6']
+        dept_name = request.form['select']
+        semester = request.form['select1']
+        division = request.form['select3']
+        gender = request.form.get('gender')
+        guardian = request.form['guardian']
+        guardian_phone = request.form['phone']
+        
+        # Login Credentials
+        uname = request.form['uname']
+        password = request.form['password']
+
+        # Handle Photo Upload
+        if 'files' not in request.files or request.files['files'].filename == '':
+            flash("Student photo is required.", "danger")
+            return redirect(url_for('admin_add_student'))
+        
+        img = request.files['files']
+        filename = secure_filename(img.filename)
+        unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+        upload_path = os.path.join('./static/photos/studentphoto', unique_filename)
+        os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+        img.save(upload_path)
+
+        with db.cursor() as cursor:
+            # Get Department ID
+            cursor.execute("SELECT department_id FROM department WHERE department_name = %s", (dept_name,))
+            dept_res = cursor.fetchone()
+            if not dept_res:
+                flash("Invalid Department", "danger")
+                return redirect(url_for('admin_add_student'))
+            dept_id = dept_res['department_id']
+
+            # Create Login
+            cursor.execute("INSERT INTO login VALUES (null, %s, %s, 'student')", (uname, password))
+            lid = cursor.lastrowid
+
+            # Create Student Record
+            cursor.execute("""
+                INSERT INTO student (stid, lid, name, regno, address, phone, email, 
+                dob, semester, division, photo, gname, gnumber, gender, department_id) 
+                VALUES (null, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (lid, fname, regno, address, phone, email, dob, 
+                  semester, division, unique_filename, guardian, guardian_phone, gender, dept_id))
+        
+        db.commit()
+        flash("Student added successfully!", "success")
+        return redirect(url_for('view_student'))
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error adding student: {e}")
+        flash("Failed to add student. Error: " + str(e), "danger")
+        return redirect(url_for('admin_add_student'))
+
 @app.route('/admin/add_department', methods=['POST'])
 @login_required
 def add_department():
