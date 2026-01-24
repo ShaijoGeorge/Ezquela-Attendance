@@ -1,0 +1,51 @@
+{% extends 'student/base.html' %}
+{% block body %}
+<div class="container">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">My Profile</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    <img src="/static/photos/studentphoto/{{ student.photo }}" class="img-fluid rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                    <h4>{{ student.name }}</h4>
+                    <p class="text-muted">{{ student.regno }}</p>
+                </div>
+                <div class="col-md-8">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">Email</th>
+                            <td>{{ student.email }}</td>
+                        </tr>
+                        <tr>
+                            <th>Phone</th>
+                            <td>{{ student.phone }}</td>
+                        </tr>
+                        <tr>
+                            <th>Address</th>
+                            <td>{{ student.address }}</td>
+                        </tr>
+                        <tr>
+                            <th>Department</th>
+                            <td>{{ student.department_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Course</th>
+                            <td>{{ student.course_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Semester</th>
+                            <td>{{ student.semester }}</td>
+                        </tr>
+                        <tr>
+                            <th>Guardian</th>
+                            <td>{{ student.guardian }} ({{ student.guardian_phone }})</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

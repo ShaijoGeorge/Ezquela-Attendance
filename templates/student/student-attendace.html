@@ -1,0 +1,54 @@
+{% extends 'student/base.html' %}
+{% block body %}
+<div class="container mt-4">
+    <h3 class="mb-4">Attendance Report</h3>
+    
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Subject</th>
+                            <th>Total Hours</th>
+                            <th>Present Hours</th>
+                            <th>Percentage</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in val %}
+                        {% set percent = (row.present_hours / row.total_hours * 100) | round(1) if row.total_hours > 0 else 0 %}
+                        <tr>
+                            <td>{{ row.subject }}</td>
+                            <td>{{ row.total_hours }}</td>
+                            <td>{{ row.present_hours }}</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if percent < 75 %}bg-danger{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ percent }}%;">
+                                        {{ percent }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if percent < 75 %}
+                                <span class="badge bg-danger">Shortage</span>
+                                {% else %}
+                                <span class="badge bg-success">Good</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">No attendance records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

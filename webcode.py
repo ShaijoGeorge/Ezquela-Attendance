@@ -1408,5 +1408,92 @@ def mark_attendance_face():
         print(e)
         return jsonify({"status": "error", "message": str(e)})
 
+# STUDENT MODULE
+def get_student_info():
+    """Helper function to get current student details for the sidebar/navbar"""
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("""
+            SELECT s.*, d.department_name 
+            FROM student s
+            LEFT JOIN department d ON s.department_id = d.department_id
+            WHERE s.lid = %s
+        """, (session['lid'],))
+        return cursor.fetchone()
+
+@app.route('/student_home')
+@login_required
+def student_home():
+    student = get_student_info()
+    return render_template("student/student-home.html", student=student)
+
+@app.route('/student_profile')
+@login_required
+def student_profile():
+    student = get_student_info()
+    return render_template("student/student-profile.html", student=student, i=student)
+
+@app.route('/dataset_capture', methods=['POST', 'GET'])
+@login_required
+def dataset_capture():
+    student = get_student_info()
+    
+    if request.method == 'POST':
+        if 'files' not in request.files:
+            flash("No photos uploaded", "danger")
+            return redirect(url_for('student_home'))
+            
+        files = request.files.getlist('files')
+        lid = session['lid']
+        
+        # Save to static/dataset/s{id}
+        student_folder = os.path.join('static', 'dataset', f's{lid}')
+        os.makedirs(student_folder, exist_ok=True)
+        
+        count = 0
+        for file in files:
+            if file and file.filename:
+                # Unique filename to prevent overwrites
+                filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{count}.jpg"
+                file.save(os.path.join(student_folder, filename))
+                count += 1
+                
+        flash(f"{count} photos uploaded. Training model...", "info")
+        
+        # Train the model immediately
+        try:
+            from facemaster import train_model
+            # Pass the ROOT of the dataset folder
+            train_success = train_model(os.path.join('static', 'dataset'))
+            if train_success:
+                flash("Training Complete! System can now recognize you.", "success")
+            else:
+                flash("Training failed. Try uploading clearer faces.", "warning")
+        except Exception as e:
+            print(f"Training Error: {e}")
+            flash(f"System error during training: {str(e)}", "danger")
+            
+        return redirect(url_for('student_home'))
+        
+    return render_template('student/addimg.html', student=student)
+
+@app.route('/student_view_attendance')
+@login_required
+def student_view_attendance():
+    student = get_student_info()
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("""
+            SELECT sub.subject, 
+                   COUNT(a.aid) as total_hours,
+                   SUM(CASE WHEN a.attendance = 1 THEN 1 ELSE 0 END) as present_hours
+            FROM subject sub
+            LEFT JOIN attendence a ON sub.sid = a.subid AND a.studentlid = %s
+            GROUP BY sub.sid, sub.subject
+        """, (session['lid'],))
+        attendance_data = cursor.fetchall()
+        
+    return render_template("student/student-attendace.html", val=attendance_data, student=student)
+
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)

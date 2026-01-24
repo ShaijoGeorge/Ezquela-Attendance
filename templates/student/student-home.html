@@ -1,0 +1,43 @@
+{% extends 'student/base.html' %}
+{% block body %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Student Dashboard</h1>
+
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card shadow border-left-primary py-2">
+                <div class="card-body">
+                    <h4 class="text-primary">Welcome Back, {{ student.name }}!</h4>
+                    <p>Department: {{ student.department_name }} | Semester: {{ student.semester }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-user-astronaut fa-3x text-warning"></i>
+                    </div>
+                    <h5>Face Recognition Setup</h5>
+                    <p class="text-muted small">Upload photos so the AI can mark your attendance.</p>
+                    <a href="/dataset_capture" class="btn btn-warning w-100">Train Model</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-chart-line fa-3x text-success"></i>
+                    </div>
+                    <h5>Check Attendance</h5>
+                    <p class="text-muted small">View your presence percentage per subject.</p>
+                    <a href="/student_view_attendance" class="btn btn-success w-100">View Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
