@@ -11,7 +11,7 @@
                         <th>Leave Date</th>
                         <th>Reason</th>
                         <th>Status</th>
-                    </tr>
+                        <th>Action</th> </tr>
                 </thead>
                 <tbody>
                     {% for row in val %}
@@ -28,9 +28,20 @@
                             <span class="badge bg-warning text-dark">Pending</span>
                             {% endif %}
                         </td>
+                        <td>
+                            {% if row.status == 'pending' %}
+                            <a href="/student_cancel_leave/{{ row.lvid }}" 
+                               class="btn btn-sm btn-danger" 
+                               onclick="return confirm('Are you sure you want to cancel this request?');">
+                               <i class="fas fa-times"></i> Cancel
+                            </a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center">No leave history found.</td></tr>
+                    <tr><td colspan="5" class="text-center">No leave history found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

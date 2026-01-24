@@ -1530,6 +1530,17 @@ def student_leave_status():
         leaves = cursor.fetchall()
     return render_template("student/leavestatus.html", val=leaves, student=student)
 
+@app.route('/student_cancel_leave/<int:id>')
+@login_required
+def student_cancel_leave(id):
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("DELETE FROM `leave` WHERE lvid=%s AND studlid=%s AND status='pending'", (id, session['lid']))
+    
+    db.commit()
+    flash("Leave request cancelled successfully.", "warning")
+    return redirect(url_for('student_leave_status'))
+
 # Staff Side
 @app.route('/staff_view_leave')
 @login_required
