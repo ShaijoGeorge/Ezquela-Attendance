@@ -1,0 +1,91 @@
+{% extends 'staff/base.html' %}
+{% block body %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Edit Profile</h5>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <form action="/update_staff_profile" method="post" id="editForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                        <div class="d-flex align-items-center mb-4 p-3 bg-light rounded border">
+                            <img src="/static/photos/staffphoto/{{ teacher.photo }}" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                            <div>
+                                <h5 class="mb-0 text-dark">{{ teacher.name }}</h5>
+                                <small class="text-muted">{{ teacher.qualification }} - {{ teacher.department_name }}</small>
+                            </div>
+                        </div>
+
+                        <h6 class="text-primary mb-3">Contact Information</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="number" name="phone" class="form-control track-change" 
+                                       value="{{ teacher.phone }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" name="email" class="form-control track-change" 
+                                       value="{{ teacher.email }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Residential Address</label>
+                            <textarea name="address" class="form-control track-change" rows="3" required>{{ teacher.address }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between pt-3 border-top">
+                            <a href="/staff_profile" class="btn btn-secondary px-4">Cancel</a>
+                            
+                            <button type="submit" id="saveBtn" class="btn btn-primary px-4" disabled>
+                                <i class="fas fa-save me-2"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const saveBtn = document.getElementById("saveBtn");
+        const inputs = document.querySelectorAll(".track-change");
+        let initialValues = {};
+
+        // Store original values
+        inputs.forEach(input => {
+            initialValues[input.name] = input.value.trim();
+        });
+
+        function checkForChanges() {
+            let hasChanged = false;
+            inputs.forEach(input => {
+                if (input.value.trim() !== initialValues[input.name]) {
+                    hasChanged = true;
+                }
+            });
+            
+            if (hasChanged) {
+                saveBtn.removeAttribute("disabled");
+                saveBtn.innerHTML = '<i class="fas fa-save me-2"></i> Save Changes';
+            } else {
+                saveBtn.setAttribute("disabled", "true");
+                saveBtn.innerHTML = '<i class="fas fa-check me-2"></i> No Changes';
+            }
+        }
+
+        inputs.forEach(input => {
+            input.addEventListener("input", checkForChanges);
+        });
+    });
+</script>
+{% endblock %}

@@ -1211,7 +1211,7 @@ def view_timetables():
 
     return render_template("admin/timetableview.html", res=res, dept_list=dept_list, course_list=course_list, dept=dept_name, sem=sem, course=course)
 
-# Staff Home Dashboard
+# STAFF MODULE
 @app.route('/staff_home')
 @login_required
 def staff_home():
@@ -1264,29 +1264,62 @@ def staff_profile():
     # Pass 'teacher' for base.html AND 'i' for the profile form
     return render_template("staff/staff_profile.html", i=profile, teacher=profile)
 
+@app.route('/staff_edit_profile')
+@login_required
+def staff_edit_profile():
+    db = get_db()
+    with db.cursor() as cursor:
+        # Fetch teacher details
+        cursor.execute("""
+            SELECT t.*, d.department_name 
+            FROM teacher t 
+            LEFT JOIN department d ON t.department_id = d.department_id 
+            WHERE t.lid = %s
+        """, (session['lid'],))
+        profile = cursor.fetchone()
+    
+    return render_template("staff/staff-edit.html", teacher=profile)
+
 # Update Staff Profile
 @app.route('/update_staff_profile', methods=['POST'])
 @login_required
 def update_staff_profile():
     try:
-        db = get_db()
-        name = request.form['text1']
-        address = request.form['text3']
-        phone = request.form['text4']
-        email = request.form['text5']
+        # Get form data
+        new_phone = request.form['phone'].strip()
+        new_email = request.form['email'].strip()
+        new_address = request.form['address'].strip()
         
+        db = get_db()
         with db.cursor() as cursor:
+            # Fetch current data to compare
+            cursor.execute("SELECT * FROM teacher WHERE lid=%s", (session['lid'],))
+            current_data = cursor.fetchone()
+            
+            # Did anything actually change?
+            if (new_phone == str(current_data['phone']) and 
+                new_email == current_data['email'] and 
+                new_address == current_data['address']):
+                
+                flash("No changes detected.", "info")
+                return redirect(url_for('staff_edit_profile'))
+            
+            # Update Database
             cursor.execute("""
                 UPDATE teacher 
-                SET name=%s, address=%s, phone=%s, email=%s 
+                SET phone=%s, email=%s, address=%s 
                 WHERE lid=%s
-            """, (name, address, phone, email, session['lid']))
+            """, (new_phone, new_email, new_address, session['lid']))
+            
         db.commit()
-        flash("Profile updated successfully", "success")
+        flash("Profile updated successfully.", "success")
         return redirect(url_for('staff_profile'))
+        
     except Exception as e:
-        flash("Update failed", "danger")
-        return redirect(url_for('staff_profile'))
+        if 'db' in locals(): db.rollback()
+        print(f"Error updating staff profile: {e}")
+        flash("Update failed. Please try again.", "danger")
+        return redirect(url_for('staff_edit_profile'))
     
 # ATTENDANCE MANAGEMENT MODULE
 @app.route('/staff_view_attendance', methods=['POST', 'GET'])
