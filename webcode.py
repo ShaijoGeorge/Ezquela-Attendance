@@ -1447,9 +1447,10 @@ def get_student_info():
     db = get_db()
     with db.cursor() as cursor:
         cursor.execute("""
-            SELECT s.*, d.department_name 
+            SELECT s.*, d.department_name, c.course_name 
             FROM student s
             LEFT JOIN department d ON s.department_id = d.department_id
+            LEFT JOIN courses c ON d.course_id = c.course_id
             WHERE s.lid = %s
         """, (session['lid'],))
         return cursor.fetchone()
