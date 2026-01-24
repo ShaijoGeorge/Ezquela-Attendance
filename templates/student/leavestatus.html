@@ -1,0 +1,40 @@
+{% extends 'student/base.html' %}
+{% block body %}
+<div class="container mt-4">
+    <h3 class="mb-4">Leave History</h3>
+    <div class="card shadow">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Applied On</th>
+                        <th>Leave Date</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in val %}
+                    <tr>
+                        <td>{{ row.req_date }}</td>
+                        <td>{{ row.leave_date }} ({{ row.days }} days)</td>
+                        <td>{{ row.leave }}</td>
+                        <td>
+                            {% if row.status == 'approved' %}
+                            <span class="badge bg-success">Approved</span>
+                            {% elif row.status == 'rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center">No leave history found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

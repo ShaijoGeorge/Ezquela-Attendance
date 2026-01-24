@@ -1495,5 +1495,74 @@ def student_view_attendance():
         
     return render_template("student/student-attendace.html", val=attendance_data, student=student)
 
+# LEAVE MANAGEMENT MODULE
+
+# Student Side
+@app.route('/student_leave', methods=['GET', 'POST'])
+@login_required
+def student_leave():
+    student = get_student_info()
+    
+    if request.method == 'POST':
+        reason = request.form['reason']
+        date = request.form['date']
+        days = request.form.get('days', 1) 
+        
+        db = get_db()
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO `leave` (req_date, studlid, `leave`, days, leave_date, status)
+                VALUES (CURDATE(), %s, %s, %s, %s, 'pending')
+            """, (session['lid'], reason, days, date))
+        db.commit()
+        flash("Leave requested successfully", "success")
+        return redirect(url_for('student_leave_status'))
+        
+    return render_template("student/student-leave.html", student=student)
+
+@app.route('/student_leave_status')
+@login_required
+def student_leave_status():
+    student = get_student_info()
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM `leave` WHERE studlid = %s ORDER BY req_date DESC", (session['lid'],))
+        leaves = cursor.fetchall()
+    return render_template("student/leavestatus.html", val=leaves, student=student)
+
+# Staff Side
+@app.route('/staff_view_leave')
+@login_required
+def staff_view_leave():
+    db = get_db()
+    with db.cursor() as cursor:
+        # Get Staff Info for Sidebar
+        cursor.execute("SELECT * FROM teacher WHERE lid=%s", (session['lid'],))
+        teacher = cursor.fetchone()
+        
+        # Get pending leaves for students in this teacher's department
+        cursor.execute("""
+            SELECT l.*, s.name, s.regno 
+            FROM `leave` l
+            JOIN student s ON l.studlid = s.lid
+            WHERE s.department_id = %s AND l.status = 'pending'
+        """, (teacher['department_id'],))
+        leaves = cursor.fetchall()
+        
+    return render_template("staff/leaveRequestView.html", val=leaves, teacher=teacher)
+
+@app.route('/staff_approve_leave/<int:leave_id>/<string:action>')
+@login_required
+def staff_approve_leave(leave_id, action):
+    status = 'approved' if action == 'approve' else 'rejected'
+    
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("UPDATE `leave` SET status=%s WHERE leave_id=%s", (status, leave_id))
+    db.commit()
+    
+    flash(f"Leave request {status}", "success")
+    return redirect(url_for('staff_view_leave'))
+
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)

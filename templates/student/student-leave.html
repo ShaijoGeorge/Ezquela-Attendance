@@ -1,0 +1,35 @@
+{% extends 'student/base.html' %}
+{% block body %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5>Apply for Leave</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="mb-3">
+                    <label class="form-label">Date of Leave</label>
+                    <input type="date" name="date" class="form-control" required min="{{ get_today_date }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Number of Days</label>
+                    <input type="number" name="days" class="form-control" value="1" min="1" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Reason</label>
+                    <textarea name="reason" class="form-control" rows="3" required placeholder="e.g. Sick Leave, Family Function"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    document.querySelector("input[name='date']").valueAsDate = new Date();
+</script>
+{% endblock %}

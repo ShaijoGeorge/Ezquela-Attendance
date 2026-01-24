@@ -1,0 +1,30 @@
+{% extends 'staff/base.html' %}
+{% block body %}
+<div class="container mt-4">
+    <h3 class="mb-4">Pending Leave Requests</h3>
+    
+    {% if val %}
+    <div class="row">
+        {% for row in val %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm border-left-warning">
+                <div class="card-body">
+                    <h5 class="card-title">{{ row.name }} <small class="text-muted">({{ row.regno }})</small></h5>
+                    <p class="card-text">
+                        <strong>Date:</strong> {{ row.leave_date }} ({{ row.days }} days)<br>
+                        <strong>Reason:</strong> {{ row.leave }}
+                    </p>
+                    <div class="d-flex justify-content-end">
+                        <a href="/staff_approve_leave/{{ row.leave_id }}/approve" class="btn btn-success btn-sm me-2">Approve</a>
+                        <a href="/staff_approve_leave/{{ row.leave_id }}/reject" class="btn btn-danger btn-sm">Reject</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-success">No pending leave requests!</div>
+    {% endif %}
+</div>
+{% endblock %}
