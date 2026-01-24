@@ -1611,5 +1611,83 @@ def staff_approve_leave(leave_id, action):
     flash(f"Leave request {status}", "success")
     return redirect(url_for('staff_view_leave'))
 
+# CHANGE PASSWORD MODULE
+def get_base_template(lid):
+    """Helper to determine which base layout to use"""
+    role = get_user_role(lid)
+    if role == 'admin':
+        return 'admin/base.html'
+    elif role == 'teacher':
+        return 'staff/base.html'
+    elif role == 'student':
+        return 'student/base.html'
+    return 'login.html' # Fallback
+
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    # Determine Role and Base Template
+    lid = session['lid']
+    role = get_user_role(lid)
+    
+    context = {}
+    base_template = 'login.html' # Default
+    
+    db = get_db()
+    
+    # Fetch User Details based on Role (Required for Sidebar/Navbar photos)
+    if role == 'admin':
+        base_template = 'admin/base.html'
+    elif role == 'teacher':
+        base_template = 'staff/base.html'
+        with db.cursor() as cursor:
+            # Fetch teacher details so teacher.photo works in base.html
+            cursor.execute("SELECT * FROM teacher WHERE lid=%s", (lid,))
+            context['teacher'] = cursor.fetchone()
+    elif role == 'student':
+        base_template = 'student/base.html'
+        with db.cursor() as cursor:
+            # Fetch student details so student.photo works in base.html
+            cursor.execute("SELECT * FROM student WHERE lid=%s", (lid,))
+            context['student'] = cursor.fetchone()
+
+    # Handle Password Change Logic
+    if request.method == 'POST':
+        try:
+            current_password = request.form['current_password']
+            new_password = request.form['new_password']
+            confirm_password = request.form['confirm_password']
+            
+            with db.cursor() as cursor:
+                # Verify Current Password
+                cursor.execute("SELECT password FROM login WHERE id=%s", (lid,))
+                user = cursor.fetchone()
+                
+                if user['password'] != current_password:
+                    flash("Incorrect Current Password!", "danger")
+                    return redirect(url_for('change_password'))
+                
+                # Check Match
+                if new_password != confirm_password:
+                    flash("New passwords do not match!", "danger")
+                    return redirect(url_for('change_password'))
+                
+                # Update Password
+                cursor.execute("UPDATE login SET password=%s WHERE id=%s", (new_password, lid))
+            
+            db.commit()
+            flash("Password changed successfully.", "success")
+            
+            # Redirect to their home page
+            if role == 'admin': return redirect('/admin_home')
+            if role == 'teacher': return redirect('/staff_home')
+            if role == 'student': return redirect('/student_home')
+            
+        except Exception as e:
+            print(f"Error changing password: {e}")
+            flash("Error occurred.", "danger")
+            
+    return render_template("change_password.html", base=base_template, **context)
+
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
