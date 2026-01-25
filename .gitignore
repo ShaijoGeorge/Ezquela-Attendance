@@ -110,6 +110,7 @@ venv.bak/
 static/photos/
 static/test/
 static/training-data/
+static/dataset/
 
 # Log files
 *.log
@@ -124,4 +125,4 @@ static/training-data/
 *.iml
 
 # Database files
-*.sql
+database/

@@ -1,6 +1,6 @@
 flask
 pymysql
-opencv-python
+opencv-contrib-python
 flask-wtf
 werkzeug
 pillow
