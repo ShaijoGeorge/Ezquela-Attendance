@@ -991,18 +991,25 @@ def delete_student():
 def view_subject():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("""
+            SELECT s.*, t.name, t.teacher_code
+            FROM subject s 
+            JOIN teacher t ON s.staff_lid = t.lid
+        """)
+        val = cursor.fetchall()
+        
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
-    return render_template("admin/subjectView.html", dept_list=dept_list, course_list=course_list)
+    return render_template("admin/subjectView.html", val=val, dept_list=dept_list, course_list=course_list)
 
 @app.route('/view_subjects_dept_sem', methods=['POST', 'GET'])
 @login_required
 def view_subjects_dept_sem():
     dept = request.form.get('select')
     sem = request.form.get('select1')
-    course = request.form.get('select_course')
+    course_id = request.form.get('select_course')
 
     db = get_db()
     with db.cursor() as cursor:
@@ -1024,19 +1031,19 @@ def view_subjects_dept_sem():
             query += " AND s.semester = %s"
             params.append(sem)
 
-        if course and course != '--Course--':
-            query += " AND c.course_name = %s"
-            params.append(course)
+        if course_id and course_id != '--Course--':
+            query += " AND c.course_id = %s"
+            params.append(course_id)
 
         cursor.execute(query, tuple(params))
         s = cursor.fetchall()
 
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
 
-    return render_template("admin/subjectView.html", val=s, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course)
+    return render_template("admin/subjectView.html", val=s, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course_id)
 
 @app.route('/delete_subject', methods=['POST', 'GET'])
 @login_required
