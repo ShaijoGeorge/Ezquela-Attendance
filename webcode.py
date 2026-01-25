@@ -767,16 +767,16 @@ def view_student_details():
 def view_student():
     db = get_db()
     with db.cursor() as cursor:
-        # Join with department table to get department_name
         cursor.execute("""
             SELECT s.*, d.department_name as department 
             FROM student s 
             LEFT JOIN department d ON s.department_id = d.department_id
         """)
         res = cursor.fetchall()
-        cursor.execute("SELECT department_name FROM department")
+
+        cursor.execute("SELECT * FROM department") 
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
     return render_template("admin/studentlist.html", val=res, dept_list=dept_list, course_list=course_list)
 
