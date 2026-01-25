@@ -1557,64 +1557,81 @@ def take_attendance():
 @app.route('/mark_attendance_face', methods=['POST'])
 @login_required
 def mark_attendance_face():
-    # This route is called by JavaScript in stopclass.html
     try:
         import base64
         
-        # 1. Get the image from the JSON request
+        # 1. Handle Image
         data = request.json
-        image_data = data['image'].split(',')[1] # Remove "data:image/jpeg;base64," header
-        
-        # 2. Save temporary file
+        image_data = data['image'].split(',')[1]
         filename = f"temp_{session['lid']}.jpg"
         filepath = os.path.join("static", "test", filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
         with open(filepath, "wb") as fh:
             fh.write(base64.b64decode(image_data))
             
-        # 3. Predict Face
+        # 2. Predict Face
         from facemaster import predict_face
         student_lid, confidence = predict_face(filepath)
         
-        response = {"status": "failed", "message": "Face not recognized"}
+        if not student_lid:
+            return jsonify({"status": "failed", "message": "Face not recognized"})
         
-        if student_lid:
-            db = get_db()
-            with db.cursor() as cursor:
-                # Get Staff Department again
+        db = get_db()
+        with db.cursor() as cursor:
+            # VALIDATION
+            # Get the session details we saved in 'take_attendance'
+            current_sem = session.get('att_sem')
+            current_div = session.get('att_div')
+            current_dept = session.get('att_dept')
+            
+            # If att_dept wasn't set in session, fetch it from the logged-in teacher (Fallback)
+            if not current_dept:
                 cursor.execute("SELECT department_id FROM teacher WHERE lid=%s", (session['lid'],))
-                dept_id = cursor.fetchone()['department_id']
-                
-                # Check if already marked for this hour
+                current_dept = cursor.fetchone()['department_id']
+
+            # Check: Does this student belong to this specific Batch?
+            cursor.execute("""
+                SELECT lid, name FROM student 
+                WHERE lid=%s AND department_id=%s AND semester=%s AND division=%s
+            """, (student_lid, current_dept, current_sem, current_div))
+            
+            valid_student = cursor.fetchone()
+            
+            if not valid_student:
+                return jsonify({
+                    "status": "error", 
+                    "message": f"Student recognized (ID: {student_lid}), but does not belong to this class."
+                })
+
+            # Mark Attendance (Only if Validation Passed)
+            cursor.execute("""
+                SELECT aid FROM attendence 
+                WHERE studentlid=%s AND date=CURDATE() AND hour=%s
+            """, (student_lid, session['att_hour']))
+            
+            if not cursor.fetchone():
                 cursor.execute("""
-                    SELECT aid FROM attendence 
-                    WHERE studentlid=%s AND date=CURDATE() AND hour=%s
-                """, (student_lid, session['att_hour']))
-                
-                if not cursor.fetchone():
-                    # Insert Present Record
-                    cursor.execute("""
-                        INSERT INTO attendence 
-                        (studentlid, date, attendance, hour, sem, division, department_id, subid, status)
-                        VALUES (%s, CURDATE(), 1, %s, %s, %s, %s, %s, 'present')
-                    """, (student_lid, 
-                          session['att_hour'], 
-                          session['att_sem'], 
-                          session['att_div'], 
-                          session['att_dept'],
-                          session['att_sub']))
-                    db.commit()
-                    response = {
-                        "status": "success", 
-                        "message": f"Marked Present: Student ID {student_lid}",
-                        "student_id": student_lid
-                    }
-                else:
-                    response = {"status": "info", "message": "Already marked present"}
+                    INSERT INTO attendence 
+                    (studentlid, date, attendance, hour, sem, division, department_id, subid, status)
+                    VALUES (%s, CURDATE(), 1, %s, %s, %s, %s, %s, 'present')
+                """, (student_lid, 
+                      session['att_hour'], 
+                      current_sem, 
+                      current_div, 
+                      current_dept, 
+                      session['att_sub']))
+                db.commit()
+                return jsonify({
+                    "status": "success", 
+                    "message": f"Marked Present: {valid_student['name']}",
+                    "student_id": student_lid
+                })
+            else:
+                return jsonify({
+                    "status": "info", 
+                    "message": f"{valid_student['name']} already marked present"
+                })
                     
-        return jsonify(response)
-        
     except Exception as e:
         print(e)
         return jsonify({"status": "error", "message": str(e)})
