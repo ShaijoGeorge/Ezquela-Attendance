@@ -1,0 +1,57 @@
+{% extends 'student/base.html' %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-book-open me-2"></i> My Subjects & Teachers</h5>
+            <span class="badge bg-light text-primary">
+                {{ student.course_name }} - S{{ student.semester }}
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Subject Code</th>
+                            <th>Subject Name</th>
+                            <th>Faculty In-Charge</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in subjects %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-secondary">{{ sub.code }}</td>
+                            <td class="fw-bold">{{ sub.subject }}</td>
+                            <td>
+                                {% if sub.teacher_name %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-info text-white me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; font-size: 14px;">
+                                            {{ sub.teacher_name[0] }}
+                                        </div>
+                                        <div>
+                                            <div>{{ sub.teacher_name }}</div>
+                                            <small class="text-muted" style="font-size: 0.8rem;">Code: {{ sub.teacher_code }}</small>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Not Assigned</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-5">
+                                <img src="/static/images/dow.png" style="width: 60px; opacity: 0.5;">
+                                <p class="text-muted mt-2">No subjects found for this semester yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

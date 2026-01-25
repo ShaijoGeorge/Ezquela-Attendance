@@ -1752,6 +1752,32 @@ def student_view_attendance():
         
     return render_template("student/student-attendace.html", val=attendance_data, student=student)
 
+@app.route('/student_view_subjects')
+@login_required
+def student_view_subjects():
+    # Get Current Student Details
+    student = get_student_info()
+    
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('student_home'))
+
+    db = get_db()
+    with db.cursor() as cursor:
+        # Fetch Subjects linked to Student's Dept & Sem
+        # Joins with 'teacher' table to get the staff name
+        cursor.execute("""
+            SELECT s.subject, s.code, t.name as teacher_name, t.teacher_code
+            FROM subject s
+            LEFT JOIN teacher t ON s.staff_lid = t.lid
+            WHERE s.department_id = %s AND s.semester = %s
+            ORDER BY s.subject
+        """, (student['department_id'], student['semester']))
+        
+        subjects = cursor.fetchall()
+        
+    return render_template("student/view_subjects.html", subjects=subjects, student=student)
+
 # LEAVE MANAGEMENT MODULE
 
 # Student Side
