@@ -519,16 +519,16 @@ def delete_course(course_id):
 def view_staff():
     db = get_db()
     with db.cursor() as cursor:
-        # Join with department table to get department_name
         cursor.execute("""
             SELECT t.*, d.department_name as department 
             FROM teacher t 
             LEFT JOIN department d ON t.department_id = d.department_id
         """)
         res = cursor.fetchall()
-        cursor.execute("SELECT department_name FROM department")
+
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
     return render_template("admin/stafflist.html", val=res, dept_list=dept_list, course_list=course_list)
 
@@ -825,7 +825,7 @@ def dept_search_student():
 @login_required
 def dept_search_staff():
     dept = request.form.get('select')
-    course = request.form.get('select_course')
+    course_id = request.form.get('select_course')
 
     db = get_db()
     with db.cursor() as cursor:
@@ -842,19 +842,19 @@ def dept_search_staff():
             query += " AND d.department_name = %s"
             params.append(dept)
 
-        if course and course != '-- Course --':
-            query += " AND c.course_name = %s"
-            params.append(course)
+        if course_id and course_id != '-- Course --':
+            query += " AND c.course_id = %s"
+            params.append(course_id)
 
         cursor.execute(query, tuple(params))
         res = cursor.fetchall()
 
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
 
-    return render_template("admin/stafflist.html", val=res, dept_list=dept_list, course_list=course_list, dept=dept, course=course)
+    return render_template("admin/stafflist.html", val=res, dept_list=dept_list, course_list=course_list, dept=dept, course=course_id)
 
 @app.route('/edit_student', methods=['POST', 'GET'])
 @login_required
