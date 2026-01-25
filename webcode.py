@@ -1438,9 +1438,9 @@ def update_staff_profile():
 def staff_view_students():
     db = get_db()
     students = []
+    total_batch_hours = 0  # Default value
     
-    # Get Filter Inputs
-    selected_class = request.form.get('selected_class') # Format: "deptId_semester"
+    selected_class = request.form.get('selected_class')
     division = request.form.get('division')
     
     with db.cursor() as cursor:
@@ -1461,11 +1461,23 @@ def staff_view_students():
                 # Parse the "deptId_semester" value
                 dept_id, sem = selected_class.split('_')
                 
-                # Calculates Overall Attendance % for each student
+                # CALCULATE TOTAL HOURS FOR THE BATCH (Common for all students)
+                # Counts unique class sessions (Date + Hour) conducted for this specific class
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT date, hour) as batch_count 
+                    FROM attendence 
+                    WHERE department_id = %s AND sem = %s AND division = %s
+                """, (dept_id, sem, division))
+                batch_data = cursor.fetchone()
+                total_batch_hours = batch_data['batch_count'] if batch_data else 0
+
+                # FETCH STUDENTS & THEIR PRESENT HOURS
                 cursor.execute("""
                     SELECT s.*, d.department_name,
-                        (SELECT COUNT(*) FROM attendence a WHERE a.studentlid = s.lid AND a.sem = s.semester) as total_hours,
-                        (SELECT COUNT(*) FROM attendence a WHERE a.studentlid = s.lid AND a.sem = s.semester AND a.attendance = 1) as present_hours
+                        (SELECT COUNT(*) FROM attendence a 
+                         WHERE a.studentlid = s.lid 
+                         AND a.sem = s.semester 
+                         AND a.attendance = 1) as present_hours
                     FROM student s
                     JOIN department d ON s.department_id = d.department_id
                     WHERE s.department_id = %s AND s.semester = %s AND s.division = %s
@@ -1480,7 +1492,8 @@ def staff_view_students():
                          my_classes=my_classes, 
                          students=students,
                          sel_class=selected_class,
-                         sel_div=division)
+                         sel_div=division,
+                         total_batch_hours=total_batch_hours)
     
 # ATTENDANCE MANAGEMENT MODULE
 @app.route('/staff_view_attendance', methods=['POST', 'GET'])

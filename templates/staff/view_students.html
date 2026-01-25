@@ -62,7 +62,7 @@
                 <tbody>
                     {% for s in students %}
                     
-                    {% set percent = (s.present_hours / s.total_hours * 100) | round(1) if s.total_hours > 0 else 0 %}
+                    {% set percent = (s.present_hours / total_batch_hours * 100) | round(1) if total_batch_hours > 0 else 0 %}
                     
                     <tr>
                         <td class="ps-4">
@@ -90,7 +90,7 @@
                                 <span class="small fw-bold">{{ percent }}%</span>
                             </div>
                             <small class="text-muted" style="font-size: 0.75rem;">
-                                {{ s.present_hours }} / {{ s.total_hours }} Hours
+                                {{ s.present_hours }} / {{ total_batch_hours }} Hours
                             </small>
                         </td>
                         <td class="text-center">
