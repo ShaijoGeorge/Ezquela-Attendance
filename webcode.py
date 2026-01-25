@@ -125,9 +125,11 @@ def logout():
 def student_signup():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept = cursor.fetchall()
-    return render_template("student.html", dept=dept)
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+    return render_template("student.html", dept=dept, courses=courses)
 
 @app.route('/add_student', methods=['POST', 'GET'])
 def add_student():
