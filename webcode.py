@@ -125,9 +125,11 @@ def logout():
 def student_signup():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept = cursor.fetchall()
-    return render_template("student.html", dept=dept)
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+    return render_template("student.html", dept=dept, courses=courses)
 
 @app.route('/add_student', methods=['POST', 'GET'])
 def add_student():
@@ -517,16 +519,16 @@ def delete_course(course_id):
 def view_staff():
     db = get_db()
     with db.cursor() as cursor:
-        # Join with department table to get department_name
         cursor.execute("""
             SELECT t.*, d.department_name as department 
             FROM teacher t 
             LEFT JOIN department d ON t.department_id = d.department_id
         """)
         res = cursor.fetchall()
-        cursor.execute("SELECT department_name FROM department")
+
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
     return render_template("admin/stafflist.html", val=res, dept_list=dept_list, course_list=course_list)
 
@@ -552,9 +554,13 @@ def delete_staff():
 def add_staff():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept = cursor.fetchall()
-    return render_template("admin/staff_form.html", dept=dept)
+        
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+        
+    return render_template("admin/staff_form.html", dept=dept, courses=courses)
 
 @app.route('/staffreg', methods=['POST', 'GET'])
 @login_required
@@ -647,21 +653,26 @@ def view_staff_details():
 @app.route('/edit_staff', methods=['GET'])
 @login_required
 def edit_staff():
+    lid = request.args.get('lid')
     db = get_db()
     with db.cursor() as cursor:
-        # Join to get department_name
-        cursor.execute(
-            """SELECT t.*, l.username, d.department_name as department 
+        cursor.execute("""
+            SELECT t.*, l.username, d.department_name as department, c.course_id
             FROM teacher t 
             JOIN login l ON t.lid = l.id 
             LEFT JOIN department d ON t.department_id = d.department_id 
-            WHERE t.lid=%s""", 
-            (request.args.get('lid'),)
-        )
+            LEFT JOIN courses c ON d.course_id = c.course_id
+            WHERE t.lid=%s
+        """, (lid,))
         res = cursor.fetchone()
-        cursor.execute("SELECT department_name FROM department")
+        
+        cursor.execute("SELECT * FROM department")
         dept = cursor.fetchall()
-    return render_template("admin/staff_form.html", val=res, dept=dept)
+
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+
+    return render_template("admin/staff_form.html", val=res, dept=dept, courses=courses)
 
 @app.route('/update_staff', methods=['POST', 'GET'])
 @login_required
@@ -756,16 +767,16 @@ def view_student_details():
 def view_student():
     db = get_db()
     with db.cursor() as cursor:
-        # Join with department table to get department_name
         cursor.execute("""
             SELECT s.*, d.department_name as department 
             FROM student s 
             LEFT JOIN department d ON s.department_id = d.department_id
         """)
         res = cursor.fetchall()
-        cursor.execute("SELECT department_name FROM department")
+
+        cursor.execute("SELECT * FROM department") 
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
     return render_template("admin/studentlist.html", val=res, dept_list=dept_list, course_list=course_list)
 
@@ -774,7 +785,7 @@ def view_student():
 def dept_search_student():
     dept = request.form.get('selects')
     sem = request.form.get('select1')
-    course = request.form.get('select_course')
+    course_id = request.form.get('select_course') # Now receiving ID
     
     db = get_db()
     with db.cursor() as cursor:
@@ -796,25 +807,25 @@ def dept_search_student():
             query += " AND s.semester = %s"
             params.append(sem)
 
-        if course and course != '-- Course --':
-            query += " AND c.course_name = %s"
-            params.append(course)
+        if course_id and course_id != '-- Course --':
+            query += " AND c.course_id = %s"
+            params.append(course_id)
 
         cursor.execute(query, tuple(params))
         res = cursor.fetchall()
         
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
     
-    return render_template("admin/studentlist.html", val=res, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course)
+    return render_template("admin/studentlist.html", val=res, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course_id)
 
 @app.route('/dept_search_staff', methods=['POST', 'GET'])
 @login_required
 def dept_search_staff():
     dept = request.form.get('select')
-    course = request.form.get('select_course')
+    course_id = request.form.get('select_course')
 
     db = get_db()
     with db.cursor() as cursor:
@@ -831,19 +842,19 @@ def dept_search_staff():
             query += " AND d.department_name = %s"
             params.append(dept)
 
-        if course and course != '-- Course --':
-            query += " AND c.course_name = %s"
-            params.append(course)
+        if course_id and course_id != '-- Course --':
+            query += " AND c.course_id = %s"
+            params.append(course_id)
 
         cursor.execute(query, tuple(params))
         res = cursor.fetchall()
 
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
 
-    return render_template("admin/stafflist.html", val=res, dept_list=dept_list, course_list=course_list, dept=dept, course=course)
+    return render_template("admin/stafflist.html", val=res, dept_list=dept_list, course_list=course_list, dept=dept, course=course_id)
 
 @app.route('/edit_student', methods=['POST', 'GET'])
 @login_required
@@ -852,17 +863,25 @@ def edit_student():
     session['slid'] = tlid
     db = get_db()
     with db.cursor() as cursor:
-        # Join with department table to get department_name
+        # Fetch Student Details + Current Course ID
         cursor.execute("""
-            SELECT s.*, d.department_name as department 
+            SELECT s.*, d.department_name as department, c.course_id 
             FROM student s 
             LEFT JOIN department d ON s.department_id = d.department_id 
+            LEFT JOIN courses c ON d.course_id = c.course_id
             WHERE s.lid = %s
         """, (tlid,))
         res = cursor.fetchone()
-        cursor.execute("SELECT department_name FROM department")
+        
+        # Fetch All Departments (with their Course IDs)
+        cursor.execute("SELECT * FROM department") 
         dept = cursor.fetchall()
-    return render_template("admin/student_editform.html", i=res, dept=dept)
+        
+        # Fetch All Courses
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+        
+    return render_template("admin/student_editform.html", i=res, dept=dept, courses=courses)
 
 
 @app.route('/update_student', methods=['POST'])
@@ -972,18 +991,25 @@ def delete_student():
 def view_subject():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("""
+            SELECT s.*, t.name, t.teacher_code
+            FROM subject s 
+            JOIN teacher t ON s.staff_lid = t.lid
+        """)
+        val = cursor.fetchall()
+        
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
-    return render_template("admin/subjectView.html", dept_list=dept_list, course_list=course_list)
+    return render_template("admin/subjectView.html", val=val, dept_list=dept_list, course_list=course_list)
 
 @app.route('/view_subjects_dept_sem', methods=['POST', 'GET'])
 @login_required
 def view_subjects_dept_sem():
     dept = request.form.get('select')
     sem = request.form.get('select1')
-    course = request.form.get('select_course')
+    course_id = request.form.get('select_course')
 
     db = get_db()
     with db.cursor() as cursor:
@@ -1005,19 +1031,19 @@ def view_subjects_dept_sem():
             query += " AND s.semester = %s"
             params.append(sem)
 
-        if course and course != '--Course--':
-            query += " AND c.course_name = %s"
-            params.append(course)
+        if course_id and course_id != '--Course--':
+            query += " AND c.course_id = %s"
+            params.append(course_id)
 
         cursor.execute(query, tuple(params))
         s = cursor.fetchall()
 
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
 
-    return render_template("admin/subjectView.html", val=s, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course)
+    return render_template("admin/subjectView.html", val=s, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course_id)
 
 @app.route('/delete_subject', methods=['POST', 'GET'])
 @login_required
@@ -1041,9 +1067,12 @@ def delete_subject():
 def add_subject():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-    return render_template("admin/register_subject.html", dept_list=dept_list)
+
+        cursor.execute("SELECT * FROM courses")
+        course_list = cursor.fetchall()
+    return render_template("admin/register_subject.html", dept_list=dept_list, course_list=course_list)
 
 @app.route('/register_subject', methods=['POST', 'GET'])
 @login_required
@@ -1112,9 +1141,13 @@ def get_staff():
 def add_timetable():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-    return render_template("admin/addtimetable.html", dept_list=dept_list)
+        
+        cursor.execute("SELECT * FROM courses")
+        course_list = cursor.fetchall()
+        
+    return render_template("admin/addtimetable.html", dept_list=dept_list, course_list=course_list)
 
 @app.route('/addtimetable', methods=['POST', 'GET'])
 @login_required
@@ -1254,7 +1287,7 @@ def viewtimetable():
 def view_timetables():
     dept_name = request.form.get('select')
     sem = request.form.get('Semester')
-    course = request.form.get('select_course')
+    course_id = request.form.get('select_course')
 
     db = get_db()
     with db.cursor() as cursor:
@@ -1275,19 +1308,19 @@ def view_timetables():
             query += " AND tt.sem = %s"
             params.append(sem)
 
-        if course and course != '--Course--':
-            query += " AND c.course_name = %s"
-            params.append(course)
+        if course_id and course_id != '--Course--':
+            query += " AND c.course_id = %s"
+            params.append(course_id)
 
         cursor.execute(query, tuple(params))
         res = cursor.fetchall()
 
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
 
-    return render_template("admin/timetableview.html", res=res, dept_list=dept_list, course_list=course_list, dept=dept_name, sem=sem, course=course)
+    return render_template("admin/timetableview.html", res=res, dept_list=dept_list, course_list=course_list, dept=dept_name, sem=sem, course=course_id)
 
 # STAFF MODULE
 @app.route('/staff_home')

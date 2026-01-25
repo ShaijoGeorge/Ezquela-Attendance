@@ -24,22 +24,29 @@
         <form action="/dept_search_staff" method="post" class="row g-3 align-items-end">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="col-md-4">
-            <label for="course" class="form-label">Course</label>
-            <select name="select_course" id="course" class="form-select">
-              <option disabled {% if not course %}selected{% endif %}>-- Course --</option>
-              {% for c in course_list %}
-              <option value="{{ c.course_name }}" {% if course and course == c.course_name %} selected {% endif %}>{{ c.course_name }}</option>
-              {% endfor %}
-            </select>
+              <label for="course" class="form-label">Course</label>
+              <select name="select_course" id="course" class="form-select" onchange="filterDepartments()">
+                  <option value="">-- Course --</option>
+                  {% for c in course_list %}
+                  <option value="{{ c.course_id }}" {% if course|string == c.course_id|string %} selected {% endif %}>
+                      {{ c.course_name }}
+                  </option>
+                  {% endfor %}
+              </select>
           </div>
+
           <div class="col-md-4">
-            <label for="department" class="form-label">Department</label>
-            <select name="select" id="department" class="form-select">
-              <option disabled {% if not dept %}selected{% endif %}>-- Department --</option>
-              {% for d in dept_list %}
-              <option value="{{ d.department_name }}" {% if dept and dept == d.department_name %} selected {% endif %}>{{ d.department_name }}</option>
-              {% endfor %}
-            </select>
+              <label for="department" class="form-label">Department</label>
+              <select name="selects" id="department" class="form-select">
+                  <option value="">-- Department --</option>
+                  {% for d in dept_list %}
+                  <option value="{{ d.department_name }}" 
+                          data-course="{{ d.course_id }}" 
+                          {% if dept and dept == d.department_name %} selected {% endif %}>
+                      {{ d.department_name }}
+                  </option>
+                  {% endfor %}
+              </select>
           </div>
           <div class="col-md-auto">
             <button type="submit" class="btn btn-success"><i class="fas fa-search me-2"></i> Search</button>
@@ -102,4 +109,26 @@
       </div>
     </div>
   </div>
+
+  <script>
+function filterDepartments() {
+    var courseId = document.getElementById("course").value;
+    var deptSelect = document.getElementById("department");
+    var options = deptSelect.getElementsByTagName("option");
+    
+    for (var i = 0; i < options.length; i++) {
+        var option = options[i];
+        var deptCourse = option.getAttribute("data-course");
+
+        // Logic: Show if (Course not selected) OR (Course matches) OR (Option is the 'Select' placeholder)
+        if (!courseId || courseId === "" || deptCourse === courseId || option.value === "") {
+            option.style.display = "block"; 
+        } else {
+            option.style.display = "none"; 
+        }
+    }
+}
+// Run on load to maintain state after search
+document.addEventListener("DOMContentLoaded", filterDepartments);
+</script>
 {% endblock %}
