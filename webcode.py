@@ -653,21 +653,26 @@ def view_staff_details():
 @app.route('/edit_staff', methods=['GET'])
 @login_required
 def edit_staff():
+    lid = request.args.get('lid')
     db = get_db()
     with db.cursor() as cursor:
-        # Join to get department_name
-        cursor.execute(
-            """SELECT t.*, l.username, d.department_name as department 
+        cursor.execute("""
+            SELECT t.*, l.username, d.department_name as department, c.course_id
             FROM teacher t 
             JOIN login l ON t.lid = l.id 
             LEFT JOIN department d ON t.department_id = d.department_id 
-            WHERE t.lid=%s""", 
-            (request.args.get('lid'),)
-        )
+            LEFT JOIN courses c ON d.course_id = c.course_id
+            WHERE t.lid=%s
+        """, (lid,))
         res = cursor.fetchone()
-        cursor.execute("SELECT department_name FROM department")
+        
+        cursor.execute("SELECT * FROM department")
         dept = cursor.fetchall()
-    return render_template("admin/staff_form.html", val=res, dept=dept)
+
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+
+    return render_template("admin/staff_form.html", val=res, dept=dept, courses=courses)
 
 @app.route('/update_staff', methods=['POST', 'GET'])
 @login_required
