@@ -20,11 +20,11 @@
             <h3 class="text-center py-3 fw-bold">Ezquela</h3>
             
             <div class="text-center mb-4 px-2">
-                <img src="/static/photos/staffphoto/{{ teacher.photo if teacher and teacher.photo else 'default.jpg' }}" 
+                <img src="/static/photos/staffphoto/{{ current_user.photo if current_user and current_user.photo else 'default.jpg' }}" 
                      class="profile-img mb-2">
-                <h6 class="text-white mb-0">{{ teacher.name if teacher else 'Staff Member' }}</h6>
+                <h6 class="text-white mb-0">{{ current_user.name if current_user else 'Staff Member' }}</h6>
                 <small style="color: #bdc3c7; font-size: 0.8rem;">
-                    {{ teacher.department_name if teacher and teacher.department_name else 'Faculty' }}
+                    {{ current_user.department_name if current_user and current_user.department_name else 'Faculty' }}
                 </small>
             </div>
             

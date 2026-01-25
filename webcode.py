@@ -100,6 +100,7 @@ def user():
         
         session['lid'] = result['id']
         role = result['usertype']
+        session['role'] = role
         
         if role == "admin":
             return redirect('/admin_home')
@@ -1908,6 +1909,41 @@ def change_password():
             flash("Error occurred.", "danger")
             
     return render_template("change_password.html", base=base_template, **context)
+
+# Fetches profile data for the logged-in user (Teacher or Student) and makes it available to ALL templates as 'current_user'.
+@app.context_processor
+def inject_user_profile():
+    if 'lid' in session:
+        role = session.get('role')
+        lid = session['lid']
+        db = get_db()
+        profile = None
+        
+        with db.cursor() as cursor:
+            if role == 'teacher':
+                # Join with department table to get 'department_name'
+                cursor.execute("""
+                    SELECT t.*, d.department_name 
+                    FROM teacher t
+                    LEFT JOIN department d ON t.department_id = d.department_id
+                    WHERE t.lid=%s
+                """, (lid,))
+                profile = cursor.fetchone()
+                
+            elif role == 'student':
+                # Join with department AND courses to get 'course_name'
+                cursor.execute("""
+                    SELECT s.*, d.department_name, c.course_name 
+                    FROM student s
+                    LEFT JOIN department d ON s.department_id = d.department_id
+                    LEFT JOIN courses c ON d.course_id = c.course_id
+                    WHERE s.lid=%s
+                """, (lid,))
+                profile = cursor.fetchone()
+        
+        return dict(current_user=profile)
+    
+    return dict(current_user=None)
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
