@@ -554,9 +554,13 @@ def delete_staff():
 def add_staff():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept = cursor.fetchall()
-    return render_template("admin/staff_form.html", dept=dept)
+        
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+        
+    return render_template("admin/staff_form.html", dept=dept, courses=courses)
 
 @app.route('/staffreg', methods=['POST', 'GET'])
 @login_required

@@ -61,34 +61,52 @@
           </div>
 
           <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="qualification" class="form-label">Qualification</label>
-              <input type="text" name="text6" class="form-control" id="qualification" value="{{ val['qualification'] if val else '' }}" required>
+             <div class="col-md-6 mb-3">
+              <label for="courseSelect" class="form-label">Course</label>
+              <select id="courseSelect" class="form-select" onchange="filterDepartments()">
+                <option value="">-- Select Course --</option>
+                {% for c in courses %}
+                <option value="{{ c.course_id }}" 
+                    {% if val and val['course_id'] == c.course_id %}selected{% endif %}>
+                    {{ c.course_name }}
+                </option>
+                {% endfor %}
+              </select>
             </div>
 
             <div class="col-md-6 mb-3">
               <label for="department" class="form-label">Department</label>
               <select name="select" id="department" class="form-select" required>
-                <option disabled {% if not val %}selected{% endif %}>-- Department --</option>
+                <option value="">-- Select Department --</option>
                 {% for d in dept %}
-                <option value="{{ d.department_name }}" {% if val and val['department'] == d.department_name %}selected{% endif %}>{{ d.department_name }}</option>
+                <option value="{{ d.department_name }}" 
+                        data-course="{{ d.course_id }}"
+                        {% if val and val['department'] == d.department_name %}selected{% endif %}>
+                    {{ d.department_name }}
+                </option>
                 {% endfor %}
               </select>
             </div>
           </div>
-
-          <div class="mb-3">
-            <label class="form-label">Gender</label>
-            <div class="d-flex">
-                <div class="form-check me-3">
-                    <input class="form-check-input" type="radio" name="gender" id="male" value="Male" {% if val and val['gender'] == 'Male' %}checked{% endif %} required>
-                    <label class="form-check-label" for="male">Male</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="gender" id="female" value="Female" {% if val and val['gender'] == 'Female' %}checked{% endif %}>
-                    <label class="form-check-label" for="female">Female</label>
-                </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="qualification" class="form-label">Qualification</label>
+              <input type="text" name="text6" class="form-control" id="qualification" value="{{ val['qualification'] if val else '' }}" required>
             </div>
+
+             <div class="col-md-6 mb-3">
+                <label class="form-label">Gender</label>
+                <div class="d-flex mt-2">
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="radio" name="gender" id="male" value="Male" {% if val and val['gender'] == 'Male' %}checked{% endif %} required>
+                        <label class="form-check-label" for="male">Male</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="gender" id="female" value="Female" {% if val and val['gender'] == 'Female' %}checked{% endif %}>
+                        <label class="form-check-label" for="female">Female</label>
+                    </div>
+                </div>
+              </div>
           </div>
 
           <div class="mb-3">
@@ -98,7 +116,7 @@
               <img src="{{ url_for('static', filename='photos/staffphoto/' + val['photo']) }}" alt="Staff Photo" class="img-thumbnail" width="150">
             </div>
             {% endif %}
-            <input type="file" name="files" class="form-control" id="photo">
+            <input type="file" name="files" class="form-control" id="photo" {% if not val %}required{% endif %}>
           </div>
 
           <div class="row">
@@ -119,4 +137,27 @@
     </div>
 
   </div>
+
+  <script>
+  function filterDepartments() {
+      var courseId = document.getElementById("courseSelect").value;
+      var deptSelect = document.getElementById("department");
+      var options = deptSelect.getElementsByTagName("option");
+
+      for (var i = 0; i < options.length; i++) {
+          var option = options[i];
+          var deptCourse = option.getAttribute("data-course");
+
+          // Logic: Show if Course matches OR if it's the placeholder/empty value
+          if (courseId === "" || deptCourse === courseId || option.value === "") {
+              option.style.display = "block"; 
+          } else {
+              option.style.display = "none"; 
+          }
+      }
+  }
+
+  // Run immediately on load to filter departments based on the pre-selected course (Edit Mode)
+  document.addEventListener("DOMContentLoaded", filterDepartments);
+  </script>
 {% endblock %}
