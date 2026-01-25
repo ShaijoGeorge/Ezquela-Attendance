@@ -2,117 +2,128 @@
 
 {% block body %}
 
-    <div class="container py-4">
+<div class="container py-4">
     <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
-        <h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i> View Timetable</h4>
+            <h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i> View Timetable</h4>
         </div>
         <div class="card-body">
 
-        <form action="/view_timetables" method="post" class="row g-3 mb-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="col-md-4">
-                <label for="course" class="form-label">Course</label>
-                <select class="form-select" id="course" name="select_course" required>
-                    <option disabled selected>--Course--</option>
-                    {% for c in course_list %}
-                    <option {% if course and course == c.course_name %} selected {% endif %}>{{ c.course_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-            <label for="department" class="form-label">Department</label>
-            <select class="form-select" id="department" name="select" required>
-                <option disabled selected>--Department--</option>
-                {% for d in dept_list %}
-                <option {% if dept and dept == d.department_name %} selected {% endif %}>{{ d.department_name }}</option>
-                {% endfor %}
-            </select>
+            <form action="/view_timetables" method="post" class="row g-3 mb-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="col-md-4">
+                    <label for="course" class="form-label">Course</label>
+                    <select class="form-select" id="course" name="select_course" onchange="filterDepartments()">
+                        <option value="">--Course--</option>
+                        {% for c in course_list %}
+                        <option value="{{ c.course_id }}" {% if course|string == c.course_id|string %} selected {% endif %}>
+                            {{ c.course_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="department" class="form-label">Department</label>
+                    <select class="form-select" id="department" name="select">
+                        <option value="">--Department--</option>
+                        {% for d in dept_list %}
+                        <option value="{{ d.department_name }}" 
+                                data-course="{{ d.course_id }}"
+                                {% if dept and dept == d.department_name %} selected {% endif %}>
+                            {{ d.department_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label for="semester" class="form-label">Semester</label>
+                    <select class="form-select" id="semester" name="Semester">
+                        <option disabled selected>--Select Semester--</option>
+                        {% for s in range(1,9) %}
+                        <option {% if sem==s|string %} selected {% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 align-self-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> Search</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Day</th>
+                            <th>Hour 1</th>
+                            <th>Hour 2</th>
+                            <th>Hour 3</th>
+                            <th>Hour 4</th>
+                            <th>Hour 5</th>
+                            <th>Hour 6</th>
+                            <th>Hour 7</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in res %}
+                        <tr>
+                            <td>{{ i['day'] }}</td>
+                            <td>{{ i['h1'] }}</td>
+                            <td>{{ i['h2'] }}</td>
+                            <td>{{ i['h3'] }}</td>
+                            <td>{{ i['h4'] }}</td>
+                            <td>{{ i['h5'] }}</td>
+                            <td>{{ i['h6'] }}</td>
+                            <td>{{ i['h7'] }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                {% if course and dept and sem %}
+                                    No timetable found for the selected criteria.
+                                {% else %}
+                                    Please select a course, department, and semester to view the timetable.
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
 
-            <div class="col-md-2">
-            <label for="semester" class="form-label">Semester</label>
-            <select class="form-select" id="semester" name="Semester" required>
-                <option disabled selected>--Select Semester--</option>
-                {% for s in range(1,9) %}
-                <option>{{ s }}</option>
-                {% endfor %}
-            </select>
+            <div class="text-end mt-3">
+                <a href="add_timetable" class="btn btn-success">
+                    <i class="fas fa-plus me-1"></i> Create Timetable
+                </a>
             </div>
-
-            <div class="col-md-2 align-self-end">
-            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> Search</button>
-            </div>
-        </form>
-
-        <div class="table-responsive">
-            <table class="table table-bordered text-center align-middle">
-            <thead class="table-primary">
-                <tr>
-                    <th>Day</th>
-                    <th>Hour 1</th>
-                    <th>Hour 2</th>
-                    <th>Hour 3</th>
-                    <th>Hour 4</th>
-                    <th>Hour 5</th>
-                    <th>Hour 6</th>
-                    <th>Hour 7</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for i in res %}
-                <tr>
-                    <td>{{ i['day'] }}</td>
-                    <td>{{ i['h1'] }}</td>
-                    <td>{{ i['h2'] }}</td>
-                    <td>{{ i['h3'] }}</td>
-                    <td>{{ i['h4'] }}</td>
-                    <td>{{ i['h5'] }}</td>
-                    <td>{{ i['h6'] }}</td>
-                    <td>{{ i['h7'] }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="8" class="text-center">No timetable found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            </table>
-        </div>
-
-        <div class="text-end mt-3">
-            <a href="add_timetable" class="btn btn-success">
-            <i class="fas fa-plus me-1"></i> Create Timetable
-            </a>
-        </div>
 
         </div>
     </div>
-    </div>
+</div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-    $(document).ready(function(){
-        $("#department").change(function(){
-            var dept = $(this).val();
-            if (dept) {
-                $.ajax({
-                    type: 'POST',
-                    url: "/getsubject",
-                    data: { sem: dept },
-                    success: function(response) {
-                        var options = '';
-                        for (var i = 0; i < response.length; i += 2) {
-                            options += '<option value="'+response[i]+'">'+response[i+1]+'</option>';
-                        }
-                        $('#subject').html(options).prop('disabled', false);
-                    }
-                });
+<script>
+    function filterDepartments() {
+        var courseId = document.getElementById("course").value;
+        var deptSelect = document.getElementById("department");
+        var options = deptSelect.getElementsByTagName("option");
+
+        for (var i = 0; i < options.length; i++) {
+            var option = options[i];
+            var deptCourse = option.getAttribute("data-course");
+
+            if (!courseId || courseId === "" || deptCourse === courseId || option.value === "") {
+                option.style.display = "block";
             } else {
-                $('#subject').html('').prop('disabled', true);
+                option.style.display = "none";
             }
-        });
-    });
-    </script>
+        }
+    }
+
+    // Run on load to set initial state (e.g. after search)
+    document.addEventListener("DOMContentLoaded", filterDepartments);
+</script>
 
 {% endblock %}
