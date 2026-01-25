@@ -1431,6 +1431,53 @@ def update_staff_profile():
         print(f"Error updating staff profile: {e}")
         flash("Update failed. Please try again.", "danger")
         return redirect(url_for('staff_edit_profile'))
+
+@app.route('/staff_view_students', methods=['POST', 'GET'])
+@login_required
+def staff_view_students():
+    db = get_db()
+    students = []
+    
+    # Get Filter Inputs
+    selected_class = request.form.get('selected_class') # Format: "deptId_semester"
+    division = request.form.get('division')
+    
+    with db.cursor() as cursor:
+        # Fetch "My Classes" (Batches the teacher actually teaches)
+        # We group by Dept and Sem to avoid duplicates if they teach 2 subjects to the same class
+        cursor.execute("""
+            SELECT DISTINCT d.department_id, d.department_name, s.semester, c.course_name
+            FROM subject s
+            JOIN department d ON s.department_id = d.department_id
+            LEFT JOIN courses c ON d.course_id = c.course_id
+            WHERE s.staff_lid = %s
+            ORDER BY d.department_name, s.semester
+        """, (session['lid'],))
+        my_classes = cursor.fetchall()
+        
+        # If Filter Submitted, Fetch Students
+        if request.method == 'POST' and selected_class and division:
+            try:
+                # Parse the "deptId_semester" value
+                dept_id, sem = selected_class.split('_')
+                
+                cursor.execute("""
+                    SELECT s.*, d.department_name 
+                    FROM student s
+                    JOIN department d ON s.department_id = d.department_id
+                    WHERE s.department_id = %s AND s.semester = %s AND s.division = %s
+                    ORDER BY s.regno
+                """, (dept_id, sem, division))
+                students = cursor.fetchall()
+                
+            except ValueError:
+                flash("Invalid class selection.", "danger")
+
+    return render_template("staff/view_students.html", 
+                         my_classes=my_classes, 
+                         students=students,
+                         sel_class=selected_class,
+                         sel_div=division)
     
 # ATTENDANCE MANAGEMENT MODULE
 @app.route('/staff_view_attendance', methods=['POST', 'GET'])
