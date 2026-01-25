@@ -1738,16 +1738,24 @@ def dataset_capture():
 @login_required
 def student_view_attendance():
     student = get_student_info()
+    
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('student_home'))
+
     db = get_db()
     with db.cursor() as cursor:
+        # Filter Subjects by Student's Dept & Sem
         cursor.execute("""
-            SELECT sub.subject, 
+            SELECT sub.subject, sub.code, 
                    COUNT(a.aid) as total_hours,
                    SUM(CASE WHEN a.attendance = 1 THEN 1 ELSE 0 END) as present_hours
             FROM subject sub
             LEFT JOIN attendence a ON sub.sid = a.subid AND a.studentlid = %s
-            GROUP BY sub.sid, sub.subject
-        """, (session['lid'],))
+            WHERE sub.department_id = %s AND sub.semester = %s
+            GROUP BY sub.sid, sub.subject, sub.code
+        """, (session['lid'], student['department_id'], student['semester']))
+        
         attendance_data = cursor.fetchall()
         
     return render_template("student/student-attendace.html", val=attendance_data, student=student)
