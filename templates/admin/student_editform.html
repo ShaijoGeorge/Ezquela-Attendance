@@ -54,16 +54,34 @@
           </div>
 
           <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
               <label for="dob" class="form-label">Date of Birth</label>
               <input type="date" name="text6" class="form-control" id="dob" value="{{ i['dob'] if i else '' }}" required>
             </div>
-            <div class="col-md-6 mb-3">
+
+            <div class="col-md-4 mb-3">
+              <label for="courseSelect" class="form-label">Course</label>
+              <select id="courseSelect" class="form-select" onchange="filterDepartments()">
+                <option value="">-- Select Course --</option>
+                {% for c in courses %}
+                <option value="{{ c.course_id }}" 
+                    {% if i and i['course_id'] == c.course_id %}selected{% endif %}>
+                    {{ c.course_name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-4 mb-3">
               <label for="department" class="form-label">Department</label>
               <select name="select" id="department" class="form-select" required>
-                <option disabled {% if not i %}selected{% endif %}>-- Department --</option>
+                <option value="">-- Select Department --</option>
                 {% for d in dept %}
-                <option value="{{ d.department_name }}" {% if i and i['department'] == d.department_name %}selected{% endif %}>{{ d.department_name }}</option>
+                <option value="{{ d.department_name }}" 
+                        data-course="{{ d.course_id }}"
+                        {% if i and i['department'] == d.department_name %}selected{% endif %}>
+                    {{ d.department_name }}
+                </option>
                 {% endfor %}
               </select>
             </div>
@@ -130,7 +148,28 @@
 
 {% block scripts %}
 <script>
+// Filter Departments Based on Course
+function filterDepartments() {
+    var courseId = document.getElementById("courseSelect").value;
+    var deptSelect = document.getElementById("department");
+    var options = deptSelect.getElementsByTagName("option");
+
+    for (var i = 0; i < options.length; i++) {
+        var option = options[i];
+        var deptCourse = option.getAttribute("data-course");
+
+        if (courseId === "" || deptCourse === courseId || option.value === "") {
+            option.style.display = "block"; 
+        } else {
+            option.style.display = "none"; 
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    // Run filter immediately to show correct departments for pre-selected course
+    filterDepartments();
+
     const form = document.querySelector('.student-edit-form');
 
     form.addEventListener('submit', function (e) {
@@ -147,11 +186,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const error = document.createElement('div');
             error.className = 'invalid-feedback';
             error.textContent = message;
-            // Insert error after the input element
             input.parentNode.insertBefore(error, input.nextSibling);
         }
 
-        // 1. Check required text inputs and textareas
+        // Validation Logics
         const requiredFields = [
             { id: 'name', name: 'Name' },
             { id: 'regno', name: 'Registration No' },
@@ -171,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // 2. Check email format
+        // Email validation
         const emailInput = document.getElementById('email');
         if (emailInput && emailInput.value.trim()) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -180,24 +218,21 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // 3. Check phone number format (simple check for digits)
+        // Phone validation
         const phoneInput = document.getElementById('phone');
         const guardianPhoneInput = document.getElementById('guardian_phone');
-        if (phoneInput && phoneInput.value.trim()) {
-            const phoneRegex = /^\d{10,15}$/;
-            if (!phoneRegex.test(phoneInput.value)) {
-                showError(phoneInput, 'Please enter a valid phone number (10-15 digits).');
-            }
+        const phoneRegex = /^\d{10,15}$/;
+        
+        if (phoneInput && phoneInput.value.trim() && !phoneRegex.test(phoneInput.value)) {
+            showError(phoneInput, 'Please enter a valid phone number (10-15 digits).');
         }
-        if (guardianPhoneInput && guardianPhoneInput.value.trim()) {
-            const phoneRegex = /^\d{10,15}$/;
-            if (!phoneRegex.test(guardianPhoneInput.value)) {
-                showError(guardianPhoneInput, 'Please enter a valid phone number (10-15 digits).');
-            }
+        if (guardianPhoneInput && guardianPhoneInput.value.trim() && !phoneRegex.test(guardianPhoneInput.value)) {
+            showError(guardianPhoneInput, 'Please enter a valid phone number (10-15 digits).');
         }
 
-        // 4. Check select fields
+        // Dropdown validation (Added Course & Department)
         const selectFields = [
+            { id: 'courseSelect', name: 'Course' },
             { id: 'department', name: 'Department' },
             { id: 'semester', name: 'Semester' }
         ];
@@ -209,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // 5. Check gender radio buttons
+        // Gender validation
         const genderSelected = document.querySelector('input[name="gender"]:checked');
         if (!genderSelected) {
             const genderContainer = document.querySelector('input[name="gender"]').closest('.mb-3');

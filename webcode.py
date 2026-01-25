@@ -858,17 +858,25 @@ def edit_student():
     session['slid'] = tlid
     db = get_db()
     with db.cursor() as cursor:
-        # Join with department table to get department_name
+        # Fetch Student Details + Current Course ID
         cursor.execute("""
-            SELECT s.*, d.department_name as department 
+            SELECT s.*, d.department_name as department, c.course_id 
             FROM student s 
             LEFT JOIN department d ON s.department_id = d.department_id 
+            LEFT JOIN courses c ON d.course_id = c.course_id
             WHERE s.lid = %s
         """, (tlid,))
         res = cursor.fetchone()
-        cursor.execute("SELECT department_name FROM department")
+        
+        # Fetch All Departments (with their Course IDs)
+        cursor.execute("SELECT * FROM department") 
         dept = cursor.fetchall()
-    return render_template("admin/student_editform.html", i=res, dept=dept)
+        
+        # Fetch All Courses
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+        
+    return render_template("admin/student_editform.html", i=res, dept=dept, courses=courses)
 
 
 @app.route('/update_student', methods=['POST'])
