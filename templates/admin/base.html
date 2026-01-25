@@ -1,50 +1,124 @@
 {% extends 'admin/adminindex.html' %}
-
 {% block body %}
-  <!-- Hero Section -->
-  <section class="hero-section py-5 text-center" style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; border-radius: 10px;">
-    <div class="container">
-      <h1 class="display-4 fw-bold">Welcome to Ezquela Admin Dashboard</h1>
-      <p class="lead">“Education is the most powerful weapon which you can use to change the world.”</p>
-      <h6 class="mb-4">—Nelson Mandela</h6>
-      <a href="/view_student" class="btn btn-light btn-lg me-2"><i class="fas fa-user-graduate me-2"></i> View Students</a>
-      <a href="/view_staff" class="btn btn-outline-light btn-lg"><i class="fas fa-users me-2"></i> Manage Staff</a>
+<div class="container mt-4">
+    <div class="p-5 mb-4 bg-primary text-white rounded-3 shadow-sm">
+        <div class="container-fluid py-2">
+            <h1 class="display-5 fw-bold">Admin Dashboard</h1>
+            <p class="col-md-8 fs-5">
+                Manage your institution's Departments, Staff, Students, and Schedules efficiently.
+            </p>
+        </div>
     </div>
-  </section>
 
-  <!-- Additional Content Example -->
-  <div class="container my-5">
-    <div class="row text-center">
-      <div class="col-md-4 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <i class="fas fa-user-tie fa-2x mb-3 text-primary"></i>
-            <h5 class="card-title">Staff Management</h5>
-            <p class="card-text">Add, edit, and manage staff members efficiently.</p>
-            <a href="/view_staff" class="btn btn-primary btn-sm">Go</a>
-          </div>
+    <div class="row g-4 mb-4">
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-building text-primary fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Departments</h6>
+                            <a href="/admin/departments" class="h5 text-decoration-none stretched-link text-dark fw-bold">
+                                Manage Departments
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="col-md-4 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <i class="fas fa-users fa-2x mb-3 text-success"></i>
-            <h5 class="card-title">Student Management</h5>
-            <p class="card-text">View and update student records with ease.</p>
-            <a href="/view_student" class="btn btn-success btn-sm">Go</a>
-          </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-graduation-cap text-primary fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Courses</h6>
+                            <a href="/admin/courses" class="h5 text-decoration-none stretched-link text-dark fw-bold">
+                                Manage Courses
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="col-md-4 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <i class="fas fa-calendar-alt fa-2x mb-3 text-warning"></i>
-            <h5 class="card-title">Timetable</h5>
-            <p class="card-text">Create and manage class timetables efficiently.</p>
-            <a href="/add_timetable" class="btn btn-warning btn-sm text-dark">Go</a>
-          </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-info bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-book text-info fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Subjects</h6>
+                            <a href="/view_subject" class="h5 text-decoration-none stretched-link text-dark fw-bold">
+                                Manage Subjects
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-success bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-chalkboard-teacher text-success fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Staff</h6>
+                            <a href="/view_staff" class="h5 text-decoration-none stretched-link text-dark fw-bold">
+                                Manage Staff
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-success bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-user-graduate text-success fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Students</h6>
+                            <a href="/view_student" class="h5 text-decoration-none stretched-link text-dark fw-bold">
+                                Manage Students
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-calendar-alt text-warning fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Timetable</h6>
+                            <a href="/viewtimetable" class="h5 text-decoration-none stretched-link text-dark fw-bold">
+                                Manage Timetable
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+</div>
 {% endblock %}

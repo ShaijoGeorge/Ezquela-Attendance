@@ -1,48 +1,70 @@
 {% extends 'staff/base.html' %}
-
 {% block body %}
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Dashboard</h1>
-
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h4 class="card-title text-primary">Welcome, {{ teacher.name }}!</h4>
-            <p class="card-text">Department: <strong>{{ teacher.department_name }}</strong></p>
+<div class="container mt-4">
+    <div class="p-5 mb-4 bg-primary text-white rounded-3 shadow-sm">
+        <div class="container-fluid py-2">
+            <h1 class="display-5 fw-bold">Welcome, {{ teacher.name }}!</h1>
+            <p class="col-md-8 fs-5">
+                <i class="fas fa-university me-2"></i> {{ teacher.department_name }} Department
+            </p>
+            <a href="/staff_profile" class="btn btn-light btn-lg text-primary fw-bold px-4 shadow-sm">
+                <i class="fas fa-user-circle me-2"></i> View Profile
+            </a>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-danger">
                 <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                Attendance Shortage</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ shortage_count }} Students</div>
-                            <small>Need attention (Attendance < 75%)</small>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-danger bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-exclamation-triangle text-danger fa-2x"></i>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Attendance Alerts</h6>
+                            <h3 class="mb-0 fw-bold">{{ shortage_count }}</h3>
                         </div>
                     </div>
+                    <p class="text-muted small mb-0">Students with shortage (>2 days absent)</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
                 <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Next Class</div>
-                            <a href="/take_attendance" class="btn btn-primary btn-sm mt-2">Start Class & Take Attendance</a>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-success bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-camera text-success fa-2x"></i>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Action</h6>
+                            <a href="/take_attendance" class="h5 text-decoration-none stretched-link text-dark fw-bold">
+                                Take Attendance
+                            </a>
                         </div>
                     </div>
+                    <p class="text-muted small mb-0">Start a new class session</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-4 border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-shrink-0 bg-info bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-clipboard-list text-info fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted text-uppercase mb-1">Reports</h6>
+                            <a href="/staff_view_students" class="h5 text-decoration-none stretched-link text-dark fw-bold">
+                                View My Students
+                            </a>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-0">Check attendance records</p>
                 </div>
             </div>
         </div>
