@@ -1431,6 +1431,53 @@ def update_staff_profile():
         print(f"Error updating staff profile: {e}")
         flash("Update failed. Please try again.", "danger")
         return redirect(url_for('staff_edit_profile'))
+
+@app.route('/staff_view_students', methods=['POST', 'GET'])
+@login_required
+def staff_view_students():
+    db = get_db()
+    students = []
+    
+    # Get Filter Inputs
+    selected_class = request.form.get('selected_class') # Format: "deptId_semester"
+    division = request.form.get('division')
+    
+    with db.cursor() as cursor:
+        # Fetch "My Classes" (Batches the teacher actually teaches)
+        # We group by Dept and Sem to avoid duplicates if they teach 2 subjects to the same class
+        cursor.execute("""
+            SELECT DISTINCT d.department_id, d.department_name, s.semester, c.course_name
+            FROM subject s
+            JOIN department d ON s.department_id = d.department_id
+            LEFT JOIN courses c ON d.course_id = c.course_id
+            WHERE s.staff_lid = %s
+            ORDER BY d.department_name, s.semester
+        """, (session['lid'],))
+        my_classes = cursor.fetchall()
+        
+        # If Filter Submitted, Fetch Students
+        if request.method == 'POST' and selected_class and division:
+            try:
+                # Parse the "deptId_semester" value
+                dept_id, sem = selected_class.split('_')
+                
+                cursor.execute("""
+                    SELECT s.*, d.department_name 
+                    FROM student s
+                    JOIN department d ON s.department_id = d.department_id
+                    WHERE s.department_id = %s AND s.semester = %s AND s.division = %s
+                    ORDER BY s.regno
+                """, (dept_id, sem, division))
+                students = cursor.fetchall()
+                
+            except ValueError:
+                flash("Invalid class selection.", "danger")
+
+    return render_template("staff/view_students.html", 
+                         my_classes=my_classes, 
+                         students=students,
+                         sel_class=selected_class,
+                         sel_div=division)
     
 # ATTENDANCE MANAGEMENT MODULE
 @app.route('/staff_view_attendance', methods=['POST', 'GET'])
@@ -1466,30 +1513,43 @@ def staff_view_attendance():
 def take_attendance():
     db = get_db()
     with db.cursor() as cursor:
-        # Fetch full teacher info (was only department_id before)
+        # Fetch Teacher Info
         cursor.execute("SELECT * FROM teacher WHERE lid=%s", (session['lid'],))
         teacher = cursor.fetchone()
         
         if not teacher:
-            flash("Error: Staff department not found", "danger")
+            flash("Error: Staff profile not found", "danger")
             return redirect(url_for('staff_home'))
 
-        dept_id = teacher['department_id']
-
-        # Get Subjects
-        cursor.execute("SELECT * FROM subject WHERE department_id = %s", (dept_id,))
-        subjects = cursor.fetchall()
+        # Subject-Based Filtering
+        # Only fetch subjects assigned to THIS teacher (staff_lid)
+        # We also join Department & Course to show friendly names (e.g., "CS - S3")
+        cursor.execute("""
+            SELECT s.*, d.department_name, c.course_name 
+            FROM subject s
+            JOIN department d ON s.department_id = d.department_id
+            LEFT JOIN courses c ON d.course_id = c.course_id
+            WHERE s.staff_lid = %s
+        """, (session['lid'],))
+        my_subjects = cursor.fetchall()
 
     if request.method == 'POST':
-        session['att_sub'] = request.form['subject']
+        # Save session details for the attendance loop
+        session['att_sub'] = request.form['subject']   # Subject ID
         session['att_hour'] = request.form['hour']
-        session['att_sem'] = request.form['semester']
-        session['att_div'] = request.form.get('division', 'A')
+        session['att_div'] = request.form['division']
         
-        # Pass teacher here too
+        # We need to fetch the semester & dept_id for the SELECTED subject to store it correctly
+        with db.cursor() as cursor:
+            cursor.execute("SELECT semester, department_id FROM subject WHERE sid=%s", (session['att_sub'],))
+            sub_details = cursor.fetchone()
+            
+        session['att_sem'] = sub_details['semester']
+        session['att_dept'] = sub_details['department_id'] # Use Subject's Dept, not Teacher's
+        
         return render_template("staff/stopclass.html", teacher=teacher) 
 
-    return render_template("staff/takeattedance.html", subjects=subjects, teacher=teacher)
+    return render_template("staff/takeattedance.html", subjects=my_subjects, teacher=teacher)
 
 @app.route('/mark_attendance_face', methods=['POST'])
 @login_required
@@ -1535,8 +1595,12 @@ def mark_attendance_face():
                         INSERT INTO attendence 
                         (studentlid, date, attendance, hour, sem, division, department_id, subid, status)
                         VALUES (%s, CURDATE(), 1, %s, %s, %s, %s, %s, 'present')
-                    """, (student_lid, session['att_hour'], session['att_sem'], 
-                          session['att_div'], dept_id, session['att_sub']))
+                    """, (student_lid, 
+                          session['att_hour'], 
+                          session['att_sem'], 
+                          session['att_div'], 
+                          session['att_dept'],
+                          session['att_sub']))
                     db.commit()
                     response = {
                         "status": "success", 
