@@ -1060,9 +1060,12 @@ def delete_subject():
 def add_subject():
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-    return render_template("admin/register_subject.html", dept_list=dept_list)
+
+        cursor.execute("SELECT * FROM courses")
+        course_list = cursor.fetchall()
+    return render_template("admin/register_subject.html", dept_list=dept_list, course_list=course_list)
 
 @app.route('/register_subject', methods=['POST', 'GET'])
 @login_required
