@@ -26,8 +26,6 @@ wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -106,7 +104,7 @@ venv.bak/
 # VS Code
 .vscode/
 
-# Static files
+# Static files (User Data)
 static/photos/
 static/test/
 static/training-data/
@@ -126,3 +124,6 @@ static/dataset/
 
 # Database files
 database/
+
+# AI Model (Generated file)
+trainer.yml
