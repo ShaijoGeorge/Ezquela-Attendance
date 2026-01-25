@@ -785,7 +785,7 @@ def view_student():
 def dept_search_student():
     dept = request.form.get('selects')
     sem = request.form.get('select1')
-    course = request.form.get('select_course')
+    course_id = request.form.get('select_course') # Now receiving ID
     
     db = get_db()
     with db.cursor() as cursor:
@@ -807,19 +807,19 @@ def dept_search_student():
             query += " AND s.semester = %s"
             params.append(sem)
 
-        if course and course != '-- Course --':
-            query += " AND c.course_name = %s"
-            params.append(course)
+        if course_id and course_id != '-- Course --':
+            query += " AND c.course_id = %s"
+            params.append(course_id)
 
         cursor.execute(query, tuple(params))
         res = cursor.fetchall()
         
-        cursor.execute("SELECT department_name FROM department")
+        cursor.execute("SELECT * FROM department")
         dept_list = cursor.fetchall()
-        cursor.execute("SELECT course_name FROM courses")
+        cursor.execute("SELECT * FROM courses")
         course_list = cursor.fetchall()
     
-    return render_template("admin/studentlist.html", val=res, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course)
+    return render_template("admin/studentlist.html", val=res, dept_list=dept_list, course_list=course_list, dept=dept, sem=sem, course=course_id)
 
 @app.route('/dept_search_staff', methods=['POST', 'GET'])
 @login_required
