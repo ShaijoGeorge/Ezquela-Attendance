@@ -1445,7 +1445,6 @@ def staff_view_students():
     
     with db.cursor() as cursor:
         # Fetch "My Classes" (Batches the teacher actually teaches)
-        # We group by Dept and Sem to avoid duplicates if they teach 2 subjects to the same class
         cursor.execute("""
             SELECT DISTINCT d.department_id, d.department_name, s.semester, c.course_name
             FROM subject s
@@ -1456,14 +1455,17 @@ def staff_view_students():
         """, (session['lid'],))
         my_classes = cursor.fetchall()
         
-        # If Filter Submitted, Fetch Students
+        # If Filter Submitted, Fetch Students with Attendance Data
         if request.method == 'POST' and selected_class and division:
             try:
                 # Parse the "deptId_semester" value
                 dept_id, sem = selected_class.split('_')
                 
+                # Calculates Overall Attendance % for each student
                 cursor.execute("""
-                    SELECT s.*, d.department_name 
+                    SELECT s.*, d.department_name,
+                        (SELECT COUNT(*) FROM attendence a WHERE a.studentlid = s.lid AND a.sem = s.semester) as total_hours,
+                        (SELECT COUNT(*) FROM attendence a WHERE a.studentlid = s.lid AND a.sem = s.semester AND a.attendance = 1) as present_hours
                     FROM student s
                     JOIN department d ON s.department_id = d.department_id
                     WHERE s.department_id = %s AND s.semester = %s AND s.division = %s

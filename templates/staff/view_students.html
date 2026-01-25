@@ -55,12 +55,15 @@
                         <th>Reg No</th>
                         <th>Name</th>
                         <th>Contact</th>
-                        <th>Guardian</th>
+                        <th style="width: 20%;">Attendance</th>
                         <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for s in students %}
+                    
+                    {% set percent = (s.present_hours / s.total_hours * 100) | round(1) if s.total_hours > 0 else 0 %}
+                    
                     <tr>
                         <td class="ps-4">
                             <img src="/static/photos/studentphoto/{{ s.photo }}" 
@@ -72,10 +75,23 @@
                             <div class="fw-bold">{{ s.name }}</div>
                             <small class="text-muted">{{ s.email }}</small>
                         </td>
-                        <td>{{ s.phone }}</td>
                         <td>
-                            <div class="small">{{ s.gname }}</div>
-                            <div class="small text-muted">{{ s.gnumber }}</div>
+                            <div>{{ s.phone }}</div>
+                            <small class="text-muted">G: {{ s.gnumber }}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 15px;">
+                                    <div class="progress-bar {% if percent < 75 %}bg-danger{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ percent }}%;">
+                                    </div>
+                                </div>
+                                <span class="small fw-bold">{{ percent }}%</span>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.75rem;">
+                                {{ s.present_hours }} / {{ s.total_hours }} Hours
+                            </small>
                         </td>
                         <td class="text-center">
                             <a href="/view_student_details?lid={{ s.lid }}" class="btn btn-sm btn-outline-info">
