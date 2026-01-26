@@ -1898,6 +1898,86 @@ def staff_approve_leave(leave_id, action):
     flash(f"Leave request {status}", "success")
     return redirect(url_for('staff_view_leave'))
 
+@app.route('/get_live_attendance', methods=['GET'])
+@login_required
+def get_live_attendance():
+    """Fetches the live list of students and their status for the current active class session."""
+    if 'att_sem' not in session or 'att_div' not in session:
+        return jsonify({"status": "error", "message": "No active class session"})
+    
+    # Ensure Department ID is available
+    dept_id = session.get('att_dept')
+    if not dept_id:
+        db = get_db()
+        with db.cursor() as cursor:
+            cursor.execute("SELECT department_id FROM teacher WHERE lid=%s", (session['lid'],))
+            res = cursor.fetchone()
+            if res:
+                dept_id = res['department_id']
+                session['att_dept'] = dept_id
+
+    db = get_db()
+    with db.cursor() as cursor:
+        # Fetch ALL students in this class + Their status for THIS specific hour
+        cursor.execute("""
+            SELECT s.lid, s.name, s.regno, s.photo,
+                   COALESCE(a.attendance, -1) as status 
+            FROM student s
+            LEFT JOIN attendence a ON s.lid = a.studentlid 
+                                   AND a.date = CURDATE() 
+                                   AND a.hour = %s
+            WHERE s.department_id = %s AND s.semester = %s AND s.division = %s
+            ORDER BY s.regno
+        """, (session['att_hour'], dept_id, session['att_sem'], session['att_div']))
+        students = cursor.fetchall()
+        
+    return jsonify({"status": "success", "students": students})
+
+@app.route('/update_manual_attendance', methods=['POST'])
+@login_required
+def update_manual_attendance():
+    """Manually updates a student's attendance (Present/Absent)."""
+    try:
+        data = request.json
+        student_id = data.get('student_id')
+        new_status = int(data.get('status')) # 1 for Present, 0 for Absent
+        
+        if 'att_sem' not in session:
+            return jsonify({"status": "error", "message": "Session expired"})
+
+        db = get_db()
+        with db.cursor() as cursor:
+            # Check if a record already exists for this hour
+            cursor.execute("""
+                SELECT aid FROM attendence 
+                WHERE studentlid=%s AND date=CURDATE() AND hour=%s
+            """, (student_id, session['att_hour']))
+            record = cursor.fetchone()
+            
+            status_text = 'present' if new_status == 1 else 'absent'
+            
+            if record:
+                # Update existing record
+                cursor.execute("""
+                    UPDATE attendence 
+                    SET attendance=%s, status=%s
+                    WHERE aid=%s
+                """, (new_status, status_text, record['aid']))
+            else:
+                # Insert new record (Manual Entry)
+                cursor.execute("""
+                    INSERT INTO attendence 
+                    (studentlid, date, attendance, hour, sem, division, department_id, subid, status)
+                    VALUES (%s, CURDATE(), %s, %s, %s, %s, %s, %s, %s)
+                """, (student_id, new_status, session['att_hour'], 
+                      session['att_sem'], session['att_div'], session['att_dept'], 
+                      session['att_sub'], status_text))
+            db.commit()
+            
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 # CHANGE PASSWORD MODULE
 def get_base_template(lid):
     """Helper to determine which base layout to use"""
