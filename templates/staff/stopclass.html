@@ -1,83 +1,250 @@
 {% extends 'staff/base.html' %}
 {% block body %}
-<div class="container mt-4 text-center">
-    <h3>Class In Progress...</h3>
-    <p class="text-muted">Point camera at students to mark attendance automatically.</p>
-    
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <video id="video" width="100%" height="auto" autoplay class="border rounded shadow"></video>
-            <canvas id="canvas" style="display:none;"></canvas>
-            
-            <div class="mt-3">
-                <button id="captureBtn" class="btn btn-primary btn-lg">
-                    <i class="fas fa-camera"></i> Scan Face
-                </button>
-                <a href="/staff_home" class="btn btn-danger btn-lg">Stop Class</a>
+<style>
+    .form-check-input {
+        width: 3em;
+        height: 1.5em;
+        cursor: pointer;
+        background-color: #dc3545; /* Red (Absent) by default */
+        border-color: #dc3545;
+    }
+    .form-check-input:checked {
+        background-color: #198754; /* Green (Present) when checked */
+        border-color: #198754;
+    }
+    .form-check-input:focus {
+        box-shadow: none; /* Remove blue glow */
+    }
+</style>
+
+<div class="container-fluid mt-3">
+    <input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-0 text-primary fw-bold">
+                <i class="fas fa-video me-2"></i>Class In Progress
+            </h4>
+            <div class="mt-1">
+                <span class="badge bg-secondary">Hour: {{ session.get('att_hour') }}</span>
+                <span class="badge bg-info text-dark">Div: {{ session.get('att_div') }}</span>
+                <span class="badge bg-light text-dark border">Sem: {{ session.get('att_sem') }}</span>
             </div>
-            
-            <div id="result" class="mt-3 alert alert-secondary" style="display:none;"></div>
+        </div>
+        <a href="/stop_class" class="btn btn-danger">
+            <i class="fas fa-stop-circle me-2"></i>End Class
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-5 mb-4">
+            <div class="card shadow border-0">
+                <div class="card-body p-0 position-relative bg-black rounded">
+                    <video id="video" width="100%" height="auto" autoplay muted class="rounded"></video>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    
+                    <div id="status-overlay" class="position-absolute top-0 start-0 w-100 p-2 text-center text-white" 
+                         style="background: rgba(0,0,0,0.5); display: none;">
+                        Scanning...
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-center py-3">
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        Camera is scanning automatically.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">Attendance List</h6>
+                    <button onclick="fetchLiveAttendance()" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="ps-4">Student</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-table-body">
+                            <tr><td colspan="2" class="text-center py-4 text-muted">Loading list...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span id="count-present" class="text-success fw-bold">Present: 0</span>
+                        <span id="count-absent" class="text-danger fw-bold">Absent: 0</span>
+                        <span id="count-total">Total: 0</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    var csrf_token = document.getElementById("csrf_token").value;
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrf_token);
+            }
+        }
+    });
+
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('captureBtn');
-    const resultDiv = document.getElementById('result');
-    const csrfToken = "{{ csrf_token() }}";
+    const statusOverlay = document.getElementById('status-overlay');
+    let scanning = true;
 
-    // 1. Start Camera
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => { video.srcObject = stream; })
-        .catch(err => { 
-            console.error("Camera error:", err); 
-            alert("Could not access camera. Please allow permissions.");
+    // Start Camera
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+            video.srcObject = stream;
+            video.play();
+            setInterval(captureAndSend, 3000); // Auto-scan every 3s
+            fetchLiveAttendance(); 
+            setInterval(fetchLiveAttendance, 5000); // Refresh list every 5s
+        }).catch(function(err) {
+            console.error(err);
+            alert("Camera Error: " + err);
         });
+    }
 
-    // 2. Capture & Send Image
-    captureBtn.addEventListener('click', () => {
-        // Draw video frame to canvas
+    // Capture & Send
+    function captureAndSend() {
+        if (!scanning) return;
+        const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-        
-        // Convert to Base64
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = canvas.toDataURL('image/jpeg');
 
-        // Show loading state
-        resultDiv.style.display = 'block';
-        resultDiv.className = 'alert alert-info';
-        resultDiv.innerText = "Scanning...";
-
-        // Send to Server
-        fetch('/mark_attendance_face', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+        $.ajax({
+            type: "POST",
+            url: "/mark_attendance_face",
+            contentType: "application/json",
+            data: JSON.stringify({ image: imageData }),
+            success: function(response) {
+                if(response.status === 'success') {
+                    showFlash(response.message, 'success');
+                    fetchLiveAttendance(); 
+                }
             },
-            body: JSON.stringify({ image: imageData })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                resultDiv.className = 'alert alert-success';
-                resultDiv.innerText = data.message;
-            } else if (data.status === 'info') {
-                resultDiv.className = 'alert alert-warning';
-                resultDiv.innerText = data.message;
-            } else {
-                resultDiv.className = 'alert alert-danger';
-                resultDiv.innerText = "Not Recognized. Try again.";
+            error: function(xhr) {
+                console.log("Error marking attendance:", xhr.responseText);
             }
-        })
-        .catch(err => {
-            console.error(err);
-            resultDiv.className = 'alert alert-danger';
-            resultDiv.innerText = "Server Error";
         });
-    });
+    }
+
+    function showFlash(msg, type) {
+        statusOverlay.textContent = msg;
+        statusOverlay.style.backgroundColor = type === 'success' ? 'rgba(25, 135, 84, 0.8)' : 'rgba(220, 53, 69, 0.8)';
+        statusOverlay.style.display = 'block';
+        setTimeout(() => { statusOverlay.style.display = 'none'; }, 2000);
+    }
+
+    // Fetch Live List (GET request, no CSRF needed usually, but good practice)
+    function fetchLiveAttendance() {
+        $.get("/get_live_attendance", function(response) {
+            if(response.status === 'success') {
+                const tbody = document.getElementById('student-table-body');
+                let html = '';
+                let presentCount = 0;
+                let absentCount = 0;
+                let totalCount = response.students.length;
+
+                response.students.forEach(s => {
+                    let isChecked = '';
+                    let statusLabel = 'Absent';
+                    let labelColor = 'text-danger';
+
+                    // 1 = Present
+                    if (s.status === 1) {
+                        presentCount++;
+                        isChecked = 'checked';
+                        statusLabel = 'Present';
+                        labelColor = 'text-success';
+                    } else {
+                        // 0 or -1 (Pending) treated as Absent
+                        absentCount++;
+                    }
+
+                    html += `
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <img src="/static/photos/studentphoto/${s.photo}" class="rounded-circle border me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                    <div>
+                                        <div class="fw-bold text-dark">${s.name}</div>
+                                        <small class="text-muted">${s.regno}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center" style="width: 150px;">
+                                <div class="form-check form-switch d-flex justify-content-center align-items-center">
+                                    <input class="form-check-input shadow-none" type="checkbox" 
+                                           id="toggle-${s.lid}" 
+                                           onchange="toggleAttendance(${s.lid}, this)" 
+                                           ${isChecked}>
+                                </div>
+                                <small class="${labelColor} fw-bold" id="label-${s.lid}">${statusLabel}</small>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+                document.getElementById('count-present').innerText = `Present: ${presentCount}`;
+                document.getElementById('count-absent').innerText = `Absent: ${absentCount}`;
+                document.getElementById('count-total').innerText = `Total: ${totalCount}`;
+            }
+        });
+    }
+
+    // Handle Toggle Switch (POST request - CSRF handled by $.ajaxSetup)
+    function toggleAttendance(studentId, checkbox) {
+        const newStatus = checkbox.checked ? 1 : 0;
+        const label = document.getElementById(`label-${studentId}`);
+        
+        // UI Update
+        if (checkbox.checked) {
+            label.innerText = "Present";
+            label.className = "text-success fw-bold";
+        } else {
+            label.innerText = "Absent";
+            label.className = "text-danger fw-bold";
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/update_manual_attendance",
+            contentType: "application/json",
+            data: JSON.stringify({ student_id: studentId, status: newStatus }),
+            success: function(response) {
+                if(response.status !== 'success') {
+                    // Revert if error
+                    checkbox.checked = !checkbox.checked;
+                    alert("Update failed: " + response.message);
+                } else {
+                    fetchLiveAttendance();
+                }
+            },
+            error: function(xhr) {
+                // Revert on server error
+                checkbox.checked = !checkbox.checked;
+                alert("Server Error: " + xhr.statusText);
+            }
+        });
+    }
 </script>
 {% endblock %}
