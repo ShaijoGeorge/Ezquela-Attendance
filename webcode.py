@@ -1978,6 +1978,59 @@ def update_manual_attendance():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+@app.route('/stop_class')
+@login_required
+def stop_class():
+    """Ends the class session, calculates summary, and redirects with a notification."""
+    
+    # Check if a class session is actually active
+    if 'att_sem' in session and 'att_div' in session:
+        sem = session['att_sem']
+        div = session['att_div']
+        hour = session['att_hour']
+        dept_id = session.get('att_dept')
+        
+        # Fallback: Get Dept ID if missing
+        db = get_db()
+        if not dept_id:
+            with db.cursor() as cursor:
+                cursor.execute("SELECT department_id FROM teacher WHERE lid=%s", (session['lid'],))
+                dept_id = cursor.fetchone()['department_id']
+
+        with db.cursor() as cursor:
+            # Get Total Students in this Batch
+            cursor.execute("""
+                SELECT COUNT(*) as total FROM student 
+                WHERE department_id=%s AND semester=%s AND division=%s
+            """, (dept_id, sem, div))
+            total_students = cursor.fetchone()['total']
+            
+            # Get Present Count for THIS Session
+            cursor.execute("""
+                SELECT COUNT(*) as present FROM attendence 
+                WHERE department_id=%s AND sem=%s AND division=%s 
+                AND date=CURDATE() AND hour=%s AND attendance=1
+            """, (dept_id, sem, div, hour))
+            present_count = cursor.fetchone()['present']
+            
+            # Calculate Percentage
+            pct = 0
+            if total_students > 0:
+                pct = round((present_count / total_students) * 100, 1)
+
+            # Create Notification Message
+            msg = f"Class Ended. Summary: {present_count}/{total_students} Students Present ({pct}%)."
+            flash(msg, "info")
+
+        # Clear Class Session Variables
+        session.pop('att_sub', None)
+        session.pop('att_hour', None)
+        session.pop('att_div', None)
+        session.pop('att_sem', None)
+        session.pop('att_dept', None)
+
+    return redirect(url_for('staff_home'))
+
 # CHANGE PASSWORD MODULE
 def get_base_template(lid):
     """Helper to determine which base layout to use"""
